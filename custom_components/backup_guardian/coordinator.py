@@ -1,3 +1,4 @@
+"""Data coordinator for Backup Guardian."""
 import logging
 from datetime import datetime, timedelta
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -11,24 +12,36 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
         super().__init__(
             hass,
             _LOGGER,
-            name="Backup Guardian",
+            name="Backup Guardian Coordinator",
             update_interval=timedelta(minutes=10),
         )
 
     async def _async_update_data(self):
+        """Recupera i dati dei backup dal manager interno di HA."""
         try:
-            # INTERROGA IL SISTEMA DI BACKUP DI HA (Funziona su HA OS)
+            # INTERROGA IL SISTEMA DI BACKUP DI HA
+            # Funziona su HA OS, Supervised e Container
             backups_info = await self.hass.components.backup.async_get_backups()
             
             if not backups_info:
-                return {"backups": [], "total_backups": 0, "last_backup": None, "total_size_mb": 0}
+                _LOGGER.warning("Nessun backup trovato nel sistema")
+                return {
+                    "backups": [],
+                    "total_backups": 0,
+                    "last_backup": None,
+                    "total_size_mb": 0
+                }
 
             backups_list = []
             total_size_bytes = 0
 
             for slug, b in backups_info.items():
-                # b.date è già un oggetto datetime o stringa ISO
-                dt_obj = datetime.fromisoformat(b.date.replace("Z", "+00:00"))
+                # Formattazione data (gestisce il formato ISO di HA)
+                try:
+                    dt_obj = datetime.fromisoformat(b.date.replace("Z", "+00:00"))
+                except (ValueError, TypeError):
+                    dt_obj = datetime.now()
+
                 size_mb = round(b.size / (1024 * 1024), 2)
                 total_size_bytes += b.size
 
@@ -38,11 +51,11 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
                     "date": dt_obj.strftime("%d/%m/%Y"),
                     "time": dt_obj.strftime("%H:%M:%S"),
                     "datetime": dt_obj,
-                    "hash": b.slug, # Lo slug è l'identificativo unico
+                    "hash": b.slug,  # Lo slug è l'ID univoco del backup
                     "type": "Locale/Cloud"
                 })
 
-            # Ordina per il più recente
+            # Ordina per il più recente (datetime decrescente)
             backups_list.sort(key=lambda x: x["datetime"], reverse=True)
 
             return {
@@ -53,5 +66,6 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
             }
 
         except Exception as err:
-            _LOGGER.error(f"Errore caricamento backup: {err}")
+            _LOGGER.error(f"Errore critico durante il recupero dei backup: {err}")
             raise UpdateFailed(f"Errore API Backup: {err}")
+
