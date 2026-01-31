@@ -1,0 +1,19 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configura Backup Guardian",
+        "description": "Backup Guardian monitorerà automaticamente i backup di Home Assistant nella directory /backup.",
+        "data": {}
+      }
+    },
+    "error": {
+      "cannot_connect": "Impossibile connettersi",
+      "unknown": "Errore sconosciuto"
+    },
+    "abort": {
+      "already_configured": "Backup Guardian è già configurato",
+      "single_instance_allowed": "È consentita una sola istanza di Backup Guardian"
+    }
+  }
+}

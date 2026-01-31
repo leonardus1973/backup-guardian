@@ -1,0 +1,170 @@
+========================================
+  BACKUP GUARDIAN - QUICK START
+========================================
+
+📦 HAI SCARICATO: Custom Integration per Home Assistant
+🎯 OBIETTIVO: Monitorare backup locali con verifica hash SHA256
+⏱️ TEMPO INSTALLAZIONE: ~5 minuti
+
+========================================
+  INSTALLAZIONE RAPIDA
+========================================
+
+1. COPIA I FILE
+   - Estrai il contenuto di questo archivio
+   - Copia la cartella "custom_components/backup_guardian"
+   - Incollala in "/config/custom_components/" di Home Assistant
+
+2. RIAVVIA HOME ASSISTANT
+   - Impostazioni → Sistema → Riavvia
+
+3. AGGIUNGI L'INTEGRAZIONE
+   - Impostazioni → Dispositivi e Servizi
+   - + Aggiungi Integrazione
+   - Cerca "Backup Guardian"
+   - Clicca "Invia"
+
+4. REGISTRA LA LOVELACE CARD
+   - Impostazioni → Dashboard → Risorse
+   - + Aggiungi risorsa
+   - URL: /local/community/backup_guardian/backup-guardian-card.js
+   - Tipo: Modulo JavaScript
+
+5. AGGIUNGI LA CARD ALLA DASHBOARD
+   - Entra in modalità modifica dashboard
+   - + Aggiungi Card
+   - Personalizzata: Backup Guardian Card
+   - Usa questa configurazione:
+
+type: custom:backup-guardian-card
+entity: sensor.totale_backup
+last_backup_entity: sensor.ultimo_backup
+
+6. SVUOTA LA CACHE DEL BROWSER
+   - Ctrl + Shift + R (Windows)
+   - Cmd + Shift + R (Mac)
+
+========================================
+  STRUTTURA FILE DA COPIARE
+========================================
+
+/config/
+└── custom_components/
+    └── backup_guardian/
+        ├── __init__.py
+        ├── config_flow.py
+        ├── const.py
+        ├── coordinator.py
+        ├── sensor.py
+        ├── manifest.json
+        ├── strings.json
+        ├── translations/
+        │   └── it.json
+        └── www/
+            └── backup-guardian-card.js
+
+========================================
+  SENSORI CREATI AUTOMATICAMENTE
+========================================
+
+✅ sensor.ultimo_backup
+   → Data/ora ultimo backup con dettagli
+
+✅ sensor.totale_backup
+   → Numero totale backup disponibili
+
+✅ sensor.dimensione_totale_backup
+   → Spazio occupato dai backup (MB)
+
+========================================
+  CONFIGURAZIONE CARD YAML
+========================================
+
+Metodo 1 - Card Base:
+---
+type: custom:backup-guardian-card
+entity: sensor.totale_backup
+last_backup_entity: sensor.ultimo_backup
+---
+
+Metodo 2 - Card Entities (alternativa):
+---
+type: entities
+title: Backup Status
+entities:
+  - sensor.ultimo_backup
+  - sensor.totale_backup
+  - sensor.dimensione_totale_backup
+---
+
+========================================
+  RISOLUZIONE PROBLEMI
+========================================
+
+❌ La card non appare?
+   → Svuota cache browser (Ctrl+F5)
+   → Verifica registrazione risorsa JavaScript
+   → Riavvia Home Assistant
+
+❌ Sensori non creati?
+   → Controlla che l'integrazione sia in Dispositivi e Servizi
+   → Verifica directory /backup con file .tar
+   → Riavvia Home Assistant
+
+❌ "Nessun backup trovato"?
+   → Attendi 5 minuti (aggiornamento automatico)
+   → Verifica che ci siano file .tar in /backup
+   → Controlla i log: Impostazioni → Sistema → Log
+
+========================================
+  DOCUMENTAZIONE COMPLETA
+========================================
+
+📖 README.md - Documentazione completa
+📥 INSTALLATION.md - Guida installazione dettagliata
+🚀 GUIDA_RAPIDA.md - Guida rapida in italiano
+📝 ESEMPI_CONFIGURAZIONE.md - Esempi YAML e automazioni
+🏗️ STRUCTURE.md - Struttura del progetto
+🤝 CONTRIBUTING.md - Come contribuire
+
+========================================
+  SUPPORTO
+========================================
+
+🐛 Bug o problemi?
+   → https://github.com/leonardus1973/backup-guardian/issues
+
+💡 Richieste funzionalità?
+   → https://github.com/leonardus1973/backup-guardian/issues
+
+⭐ Ti piace il progetto?
+   → Lascia una stella su GitHub!
+
+========================================
+  INFO PROGETTO
+========================================
+
+📦 Nome: Backup Guardian
+🏷️ Versione: 1.0.0
+👤 Autore: Leonardo (@leonardus1973)
+📜 Licenza: MIT
+🌐 GitHub: github.com/leonardus1973/backup-guardian
+
+========================================
+  CARATTERISTICHE PRINCIPALI
+========================================
+
+✨ Monitoraggio backup locali
+🔍 Verifica hash SHA256
+📊 3 sensori dedicati
+🎨 Lovelace card personalizzata
+🔄 Aggiornamento automatico (5 min)
+🌍 Interfaccia italiana
+🚀 Pronto per HACS
+📱 Design responsive
+
+========================================
+
+Buon monitoraggio dei tuoi backup! 🛡️
+
+========================================

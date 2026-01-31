@@ -1,0 +1,7 @@
+{
+  "name": "Backup Guardian",
+  "content_in_root": false,
+  "filename": "backup_guardian",
+  "render_readme": true,
+  "homeassistant": "2023.1.0"
+}
