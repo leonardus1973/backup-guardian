@@ -8,7 +8,7 @@ from pathlib import Path
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import DOMAIN, UPDATE_INTERVAL, BACKUP_PATH
+from .const import DOMAIN, UPDATE_INTERVAL, BACKUP_PATHS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,7 +24,18 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
             name=DOMAIN,
             update_interval=timedelta(seconds=UPDATE_INTERVAL),
         )
-        self.backup_path = Path(BACKUP_PATH)
+        self.backup_path = self._find_backup_path()
+
+    def _find_backup_path(self) -> Path | None:
+        """Find the correct backup path."""
+        for path_str in BACKUP_PATHS:
+            path = Path(path_str)
+            if path.exists():
+                _LOGGER.info(f"Found backup directory: {path}")
+                return path
+        
+        _LOGGER.warning(f"No backup directory found. Tried: {BACKUP_PATHS}")
+        return None
 
     def _calculate_file_hash(self, filepath: Path) -> str:
         """Calculate SHA256 hash of a file."""
@@ -66,17 +77,20 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
         """Fetch data from backup directory."""
         try:
             # Verifica che il percorso esista
-            if not self.backup_path.exists():
-                _LOGGER.warning(f"Backup path {self.backup_path} does not exist")
+            if not self.backup_path or not self.backup_path.exists():
+                _LOGGER.warning(f"Backup path not available")
                 return {
                     "backups": [],
                     "total_backups": 0,
                     "last_backup": None,
                     "total_size": 0,
+                    "total_size_mb": 0,
                 }
 
             # Ottieni tutti i file .tar dalla directory dei backup
             backup_files = list(self.backup_path.glob("*.tar"))
+            
+            _LOGGER.debug(f"Found {len(backup_files)} backup files in {self.backup_path}")
             
             # Ottieni informazioni su ogni backup
             backups = []
@@ -108,3 +122,4 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
         except Exception as err:
             _LOGGER.error(f"Error updating backup data: {err}")
             raise UpdateFailed(f"Error communicating with backup directory: {err}")
+
