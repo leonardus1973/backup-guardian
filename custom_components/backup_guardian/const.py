@@ -3,8 +3,12 @@
 DOMAIN = "backup_guardian"
 PLATFORMS = ["sensor"]
 
-# Percorsi dei backup
-BACKUP_PATH = "/backup"
+# Percorsi dei backup - supporto multi-piattaforma
+BACKUP_PATHS = [
+    "/usr/share/hassio/backup",  # Home Assistant OS / Supervised
+    "/backup",                    # Docker / Core
+    "/config/backups",           # Alternativa
+]
 
 # Intervallo di aggiornamento (in secondi)
 UPDATE_INTERVAL = 300  # 5 minuti
