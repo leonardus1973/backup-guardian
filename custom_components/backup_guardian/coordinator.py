@@ -1,14 +1,13 @@
 """Data coordinator for Backup Guardian."""
 import hashlib
 import logging
-import os
 from datetime import datetime, timedelta
-from pathlib import Path
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .const import DOMAIN, UPDATE_INTERVAL, BACKUP_PATHS
+from .const import DOMAIN, UPDATE_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,61 +23,93 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
             name=DOMAIN,
             update_interval=timedelta(seconds=UPDATE_INTERVAL),
         )
-        self.backup_path = self._find_backup_path()
 
-    def _find_backup_path(self) -> Path | None:
-        """Find the correct backup path."""
-        for path_str in BACKUP_PATHS:
-            path = Path(path_str)
-            if path.exists():
-                _LOGGER.info(f"Found backup directory: {path}")
-                return path
-        
-        _LOGGER.warning(f"No backup directory found. Tried: {BACKUP_PATHS}")
-        return None
-
-    def _calculate_file_hash(self, filepath: Path) -> str:
-        """Calculate SHA256 hash of a file."""
+    async def _get_backups_from_supervisor(self) -> list:
+        """Get backups using Home Assistant Supervisor API via REST."""
         try:
-            sha256_hash = hashlib.sha256()
-            with open(filepath, "rb") as f:
-                # Leggi il file in blocchi per non sovraccaricare la memoria
-                for byte_block in iter(lambda: f.read(4096), b""):
-                    sha256_hash.update(byte_block)
-            return sha256_hash.hexdigest()
+            # Usa il client HTTP di HA
+            session = async_get_clientsession(self.hass)
+            
+            # Endpoint API del Supervisor per i backup
+            url = "http://supervisor/backups"
+            
+            # Header con il token del Supervisor (HA gestisce automaticamente)
+            headers = {
+                "Authorization": f"Bearer {self.hass.data.get('hassio_token', '')}",
+            }
+            
+            async with session.get(url, headers=headers, timeout=30) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    backups = data.get("data", {}).get("backups", [])
+                    _LOGGER.debug(f"Retrieved {len(backups)} backups from Supervisor API")
+                    return backups
+                else:
+                    _LOGGER.warning(f"Supervisor API returned status {response.status}")
+                    return []
+                    
         except Exception as err:
-            _LOGGER.error(f"Error calculating hash for {filepath}: {err}")
+            _LOGGER.error(f"Error getting backups from Supervisor API: {err}")
+            return []
+
+    def _calculate_hash_from_slug(self, slug: str) -> str:
+        """Calculate a hash from backup slug for identification."""
+        try:
+            return hashlib.sha256(slug.encode()).hexdigest()
+        except Exception as err:
+            _LOGGER.error(f"Error calculating hash: {err}")
             return "N/A"
 
-    def _get_backup_info(self, filepath: Path) -> dict:
-        """Get information about a single backup file."""
+    def _process_backup(self, backup_data: dict) -> dict:
+        """Process a single backup from API data."""
         try:
-            stat = filepath.stat()
-            modified_time = datetime.fromtimestamp(stat.st_mtime)
+            # Converti il timestamp in datetime
+            date_str = backup_data.get("date", "")
+            try:
+                # Prova diversi formati di data
+                if "T" in date_str:
+                    date_obj = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+                else:
+                    date_obj = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
+            except Exception as date_err:
+                _LOGGER.warning(f"Could not parse date {date_str}: {date_err}")
+                date_obj = datetime.now()
+            
+            # Converti size da bytes a MB
+            size_bytes = backup_data.get("size", 0)
+            # Size potrebbe essere in formato stringa con unità
+            if isinstance(size_bytes, str):
+                try:
+                    # Rimuovi eventuali caratteri non numerici
+                    size_bytes = float(''.join(filter(str.isdigit, size_bytes)))
+                except:
+                    size_bytes = 0
+            
+            size_mb = round(float(size_bytes) / (1024 * 1024), 2) if size_bytes else 0
             
             return {
-                "name": filepath.name,
-                "path": str(filepath),
-                "size": stat.st_size,
-                "size_mb": round(stat.st_size / (1024 * 1024), 2),
-                "date": modified_time.strftime("%Y-%m-%d"),
-                "time": modified_time.strftime("%H:%M:%S"),
-                "datetime": modified_time,
-                "hash": self._calculate_file_hash(filepath),
-                "type": "local",
-                "protected": False,  # Può essere esteso in futuro
-                "compressed": filepath.suffix == ".tar",
+                "name": backup_data.get("name", "Unknown"),
+                "slug": backup_data.get("slug", ""),
+                "size": int(size_bytes),
+                "size_mb": size_mb,
+                "date": date_obj.strftime("%Y-%m-%d"),
+                "time": date_obj.strftime("%H:%M:%S"),
+                "datetime": date_obj,
+                "hash": self._calculate_hash_from_slug(backup_data.get("slug", "")),
+                "type": backup_data.get("type", "local"),
+                "protected": backup_data.get("protected", False),
+                "compressed": backup_data.get("compressed", True),
             }
         except Exception as err:
-            _LOGGER.error(f"Error getting info for {filepath}: {err}")
+            _LOGGER.error(f"Error processing backup data: {err}, data: {backup_data}")
             return None
 
     async def _async_update_data(self) -> dict:
-        """Fetch data from backup directory."""
+        """Fetch data from Home Assistant Supervisor API."""
         try:
-            # Verifica che il percorso esista
-            if not self.backup_path or not self.backup_path.exists():
-                _LOGGER.warning(f"Backup path not available")
+            # Verifica che siamo su Home Assistant OS/Supervised
+            if "hassio_token" not in self.hass.data:
+                _LOGGER.warning("Supervisor not available - this integration requires Home Assistant OS or Supervised")
                 return {
                     "backups": [],
                     "total_backups": 0,
@@ -86,31 +117,39 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
                     "total_size": 0,
                     "total_size_mb": 0,
                 }
-
-            # Ottieni tutti i file .tar dalla directory dei backup
-            backup_files = list(self.backup_path.glob("*.tar"))
             
-            _LOGGER.debug(f"Found {len(backup_files)} backup files in {self.backup_path}")
+            # Ottieni i backup dall'API
+            backups_raw = await self._get_backups_from_supervisor()
             
-            # Ottieni informazioni su ogni backup
+            if not backups_raw:
+                _LOGGER.info("No backups found via Supervisor API")
+                return {
+                    "backups": [],
+                    "total_backups": 0,
+                    "last_backup": None,
+                    "total_size": 0,
+                    "total_size_mb": 0,
+                }
+            
+            # Processa ogni backup
             backups = []
-            for backup_file in backup_files:
-                info = await self.hass.async_add_executor_job(
-                    self._get_backup_info, backup_file
-                )
-                if info:
-                    backups.append(info)
-
+            for backup_raw in backups_raw:
+                backup_info = self._process_backup(backup_raw)
+                if backup_info:
+                    backups.append(backup_info)
+            
             # Ordina i backup per data (più recente prima)
             backups.sort(key=lambda x: x["datetime"], reverse=True)
-
+            
             # Calcola la dimensione totale
             total_size = sum(b["size"] for b in backups)
             total_size_mb = round(total_size / (1024 * 1024), 2)
-
+            
             # Ottieni l'ultimo backup
             last_backup = backups[0] if backups else None
-
+            
+            _LOGGER.info(f"Successfully loaded {len(backups)} backups, total size: {total_size_mb} MB")
+            
             return {
                 "backups": backups,
                 "total_backups": len(backups),
@@ -118,6 +157,12 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
                 "total_size": total_size,
                 "total_size_mb": total_size_mb,
             }
+
+        except Exception as err:
+            _LOGGER.error(f"Error updating backup data: {err}", exc_info=True)
+            raise UpdateFailed(f"Error communicating with Supervisor API: {err}")
+
+        
 
         except Exception as err:
             _LOGGER.error(f"Error updating backup data: {err}")
