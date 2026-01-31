@@ -2,11 +2,9 @@
   "domain": "backup_guardian",
   "name": "Backup Guardian",
   "codeowners": ["@leonardus1973"],
-  "config_flow": true,
-  "documentation": "https://github.com/leonardus1973/backup-guardian",
-  "integration_type": "service",
+  "documentation": "https://github.com/leonardus1973/backup_guardian",
   "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/leonardus1973/backup-guardian/issues",
+  "version": "1.0.0",
   "requirements": [],
-  "version": "1.0.0"
+  "dependencies": ["backup"]
 }
