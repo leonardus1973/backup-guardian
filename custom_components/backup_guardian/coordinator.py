@@ -1,100 +1,56 @@
 """Data coordinator for Backup Guardian."""
-import hashlib
 import logging
-import os
 from datetime import datetime, timedelta
-from pathlib import Path
-
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.components import backup  # Utilizziamo il componente nativo
 
-from .const import DOMAIN, UPDATE_INTERVAL, BACKUP_PATH
+from .const import DOMAIN, UPDATE_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
 
-
 class BackupGuardianCoordinator(DataUpdateCoordinator):
-    """Class to manage fetching Backup Guardian data."""
+    """Gestisce il recupero dati tramite le API Backup di HA."""
 
     def __init__(self, hass: HomeAssistant) -> None:
-        """Initialize."""
         super().__init__(
             hass,
             _LOGGER,
             name=DOMAIN,
             update_interval=timedelta(seconds=UPDATE_INTERVAL),
         )
-        self.backup_path = Path(BACKUP_PATH)
-
-    def _calculate_file_hash(self, filepath: Path) -> str:
-        """Calculate SHA256 hash of a file."""
-        try:
-            sha256_hash = hashlib.sha256()
-            with open(filepath, "rb") as f:
-                # Leggi il file in blocchi per non sovraccaricare la memoria
-                for byte_block in iter(lambda: f.read(4096), b""):
-                    sha256_hash.update(byte_block)
-            return sha256_hash.hexdigest()
-        except Exception as err:
-            _LOGGER.error(f"Error calculating hash for {filepath}: {err}")
-            return "N/A"
-
-    def _get_backup_info(self, filepath: Path) -> dict:
-        """Get information about a single backup file."""
-        try:
-            stat = filepath.stat()
-            modified_time = datetime.fromtimestamp(stat.st_mtime)
-            
-            return {
-                "name": filepath.name,
-                "path": str(filepath),
-                "size": stat.st_size,
-                "size_mb": round(stat.st_size / (1024 * 1024), 2),
-                "date": modified_time.strftime("%Y-%m-%d"),
-                "time": modified_time.strftime("%H:%M:%S"),
-                "datetime": modified_time,
-                "hash": self._calculate_file_hash(filepath),
-                "type": "local",
-                "protected": False,  # Può essere esteso in futuro
-                "compressed": filepath.suffix == ".tar",
-            }
-        except Exception as err:
-            _LOGGER.error(f"Error getting info for {filepath}: {err}")
-            return None
 
     async def _async_update_data(self) -> dict:
-        """Fetch data from backup directory."""
+        """Recupera i dati dei backup dal sistema."""
         try:
-            # Verifica che il percorso esista
-            if not self.backup_path.exists():
-                _LOGGER.warning(f"Backup path {self.backup_path} does not exist")
-                return {
-                    "backups": [],
-                    "total_backups": 0,
-                    "last_backup": None,
-                    "total_size": 0,
-                }
-
-            # Ottieni tutti i file .tar dalla directory dei backup
-            backup_files = list(self.backup_path.glob("*.tar"))
+            # Recupera i backup registrati in HA (Locali e Cloud se integrati)
+            manager = await self.hass.components.backup.async_get_backups()
             
-            # Ottieni informazioni su ogni backup
             backups = []
-            for backup_file in backup_files:
-                info = await self.hass.async_add_executor_job(
-                    self._get_backup_info, backup_file
-                )
-                if info:
-                    backups.append(info)
+            total_size = 0
 
-            # Ordina i backup per data (più recente prima)
+            for slug, b in manager.items():
+                # Formattiamo la data
+                # b.date è solitamente una stringa ISO o un oggetto datetime
+                dt_obj = datetime.fromisoformat(b.date.replace("Z", "+00:00"))
+                
+                size_mb = round(b.size / (1024 * 1024), 2)
+                total_size += b.size
+
+                backups.append({
+                    "name": b.name,
+                    "size_mb": size_mb,
+                    "date": dt_obj.strftime("%Y-%m-%d"),
+                    "time": dt_obj.strftime("%H:%M:%S"),
+                    "datetime": dt_obj,
+                    "hash": b.slug, # Usiamo lo slug come identificativo/hash
+                    "type": "Locale", # Estensibile in futuro
+                })
+
+            # Ordina per il più recente
             backups.sort(key=lambda x: x["datetime"], reverse=True)
 
-            # Calcola la dimensione totale
-            total_size = sum(b["size"] for b in backups)
             total_size_mb = round(total_size / (1024 * 1024), 2)
-
-            # Ottieni l'ultimo backup
             last_backup = backups[0] if backups else None
 
             return {
@@ -106,5 +62,5 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
             }
 
         except Exception as err:
-            _LOGGER.error(f"Error updating backup data: {err}")
-            raise UpdateFailed(f"Error communicating with backup directory: {err}")
+            _LOGGER.error(f"Errore durante l'aggiornamento dei backup: {err}")
+            raise UpdateFailed(f"Impossibile leggere i backup: {err}")
