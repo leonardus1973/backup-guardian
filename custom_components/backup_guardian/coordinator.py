@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import DOMAIN, UPDATE_INTERVAL
 
@@ -24,32 +23,54 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
             update_interval=timedelta(seconds=UPDATE_INTERVAL),
         )
 
-    async def _get_backups_from_supervisor(self) -> list:
-        """Get backups using Home Assistant Supervisor API via REST."""
+    async def _get_backups_from_service(self) -> list:
+        """Get backups using Home Assistant backup service."""
         try:
-            # Usa il client HTTP di HA
-            session = async_get_clientsession(self.hass)
+            # Usa il servizio backup.info per ottenere i dati
+            service_data = await self.hass.services.async_call(
+                "backup",
+                "info",
+                {},
+                blocking=True,
+                return_response=True,
+            )
             
-            # Endpoint API del Supervisor per i backup
-            url = "http://supervisor/backups"
+            if service_data and "backups" in service_data:
+                backups = service_data["backups"]
+                _LOGGER.info(f"Retrieved {len(backups)} backups from backup service")
+                return backups
             
-            # Header con il token del Supervisor (HA gestisce automaticamente)
-            headers = {
-                "Authorization": f"Bearer {self.hass.data.get('hassio_token', '')}",
-            }
+            _LOGGER.warning("No backups data in service response")
+            return []
             
-            async with session.get(url, headers=headers, timeout=30) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    backups = data.get("data", {}).get("backups", [])
-                    _LOGGER.debug(f"Retrieved {len(backups)} backups from Supervisor API")
-                    return backups
-                else:
-                    _LOGGER.warning(f"Supervisor API returned status {response.status}")
-                    return []
-                    
         except Exception as err:
-            _LOGGER.error(f"Error getting backups from Supervisor API: {err}")
+            _LOGGER.error(f"Error calling backup service: {err}", exc_info=True)
+            # Prova metodo alternativo
+            return await self._get_backups_alternative()
+
+    async def _get_backups_alternative(self) -> list:
+        """Alternative method using hassio component."""
+        try:
+            # Verifica se hassio è disponibile
+            if "hassio" not in self.hass.data:
+                _LOGGER.error("Hassio component not available")
+                return []
+            
+            hassio = self.hass.data["hassio"]
+            
+            # Chiama l'API per ottenere i backup
+            result = await hassio.send_command("/backups", method="get")
+            
+            if result and "backups" in result.get("data", {}):
+                backups = result["data"]["backups"]
+                _LOGGER.info(f"Retrieved {len(backups)} backups via hassio API")
+                return backups
+            
+            _LOGGER.warning("No backups in hassio response")
+            return []
+            
+        except Exception as err:
+            _LOGGER.error(f"Error using hassio API: {err}", exc_info=True)
             return []
 
     def _calculate_hash_from_slug(self, slug: str) -> str:
@@ -72,57 +93,47 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
                 else:
                     date_obj = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
             except Exception as date_err:
-                _LOGGER.warning(f"Could not parse date {date_str}: {date_err}")
+                _LOGGER.debug(f"Could not parse date {date_str}: {date_err}")
                 date_obj = datetime.now()
             
             # Converti size da bytes a MB
             size_bytes = backup_data.get("size", 0)
-            # Size potrebbe essere in formato stringa con unità
+            # Size potrebbe essere già in MB o in formato stringa
             if isinstance(size_bytes, str):
                 try:
-                    # Rimuovi eventuali caratteri non numerici
-                    size_bytes = float(''.join(filter(str.isdigit, size_bytes)))
+                    size_bytes = float(''.join(filter(lambda x: x.isdigit() or x == '.', size_bytes)))
                 except:
                     size_bytes = 0
             
-            size_mb = round(float(size_bytes) / (1024 * 1024), 2) if size_bytes else 0
+            size_mb = round(float(size_bytes) / (1024 * 1024), 2) if size_bytes > 1024 else round(float(size_bytes), 2)
+            
+            backup_name = backup_data.get("name", backup_data.get("slug", "Unknown"))
             
             return {
-                "name": backup_data.get("name", "Unknown"),
+                "name": backup_name,
                 "slug": backup_data.get("slug", ""),
-                "size": int(size_bytes),
+                "size": int(size_bytes) if size_bytes > 1024 else int(size_bytes * 1024 * 1024),
                 "size_mb": size_mb,
                 "date": date_obj.strftime("%Y-%m-%d"),
                 "time": date_obj.strftime("%H:%M:%S"),
                 "datetime": date_obj,
                 "hash": self._calculate_hash_from_slug(backup_data.get("slug", "")),
-                "type": backup_data.get("type", "local"),
+                "type": backup_data.get("type", "full"),
                 "protected": backup_data.get("protected", False),
-                "compressed": backup_data.get("compressed", True),
+                "compressed": True,
             }
         except Exception as err:
-            _LOGGER.error(f"Error processing backup data: {err}, data: {backup_data}")
+            _LOGGER.error(f"Error processing backup: {err}, data: {backup_data}", exc_info=True)
             return None
 
     async def _async_update_data(self) -> dict:
-        """Fetch data from Home Assistant Supervisor API."""
+        """Fetch data from Home Assistant backup service."""
         try:
-            # Verifica che siamo su Home Assistant OS/Supervised
-            if "hassio_token" not in self.hass.data:
-                _LOGGER.warning("Supervisor not available - this integration requires Home Assistant OS or Supervised")
-                return {
-                    "backups": [],
-                    "total_backups": 0,
-                    "last_backup": None,
-                    "total_size": 0,
-                    "total_size_mb": 0,
-                }
-            
-            # Ottieni i backup dall'API
-            backups_raw = await self._get_backups_from_supervisor()
+            # Ottieni i backup dal servizio
+            backups_raw = await self._get_backups_from_service()
             
             if not backups_raw:
-                _LOGGER.info("No backups found via Supervisor API")
+                _LOGGER.info("No backups found")
                 return {
                     "backups": [],
                     "total_backups": 0,
@@ -137,6 +148,16 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
                 backup_info = self._process_backup(backup_raw)
                 if backup_info:
                     backups.append(backup_info)
+            
+            if not backups:
+                _LOGGER.warning("No valid backups after processing")
+                return {
+                    "backups": [],
+                    "total_backups": 0,
+                    "last_backup": None,
+                    "total_size": 0,
+                    "total_size_mb": 0,
+                }
             
             # Ordina i backup per data (più recente prima)
             backups.sort(key=lambda x: x["datetime"], reverse=True)
@@ -160,7 +181,7 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
 
         except Exception as err:
             _LOGGER.error(f"Error updating backup data: {err}", exc_info=True)
-            raise UpdateFailed(f"Error communicating with Supervisor API: {err}")
+            raise UpdateFailed(f"Error fetching backup data: {err}")
 
         
 
