@@ -1,50 +1,43 @@
-"""Backup Guardian Integration per Home Assistant."""
+"""Backup Guardian Integration."""
 import logging
-from datetime import timedelta
-
-from homeassistant.config_entries import ConfigEntry
+import os
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-
-from .const import DOMAIN, PLATFORMS
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.helpers.typing import ConfigType
 
 _LOGGER = logging.getLogger(__name__)
 
+# Il dominio deve corrispondere al nome della cartella
+DOMAIN = "backup_guardian"
 
-async def async_setup(hass: HomeAssistant, config: dict) -> bool:
-    """Set up the Backup Guardian component."""
-    hass.data.setdefault(DOMAIN, {})
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Configurazione tramite file configuration.yaml (opzionale)."""
+    
+    # REGISTRAZIONE DELLA CARD:
+    # Questo espone la cartella 'www' del tuo custom_component 
+    # all'indirizzo web: /backup_guardian/backup-guardian-card.js
+    dist_dir = hass.config.path(f"custom_components/{DOMAIN}/www")
+    
+    if os.path.isdir(dist_dir):
+        hass.http.register_static_path(
+            f"/{DOMAIN}",
+            dist_dir,
+            cache_headers=False
+        )
+        _LOGGER.info("Percorso statico per Backup Guardian Card registrato correttamente")
+    else:
+        _LOGGER.error(f"Cartella www non trovata in {dist_dir}")
+
     return True
-
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up Backup Guardian from a config entry."""
-    _LOGGER.info("Setting up Backup Guardian")
+    """Configurazione tramite Interfaccia Utente (Config Flow)."""
     
-    # Importa il coordinator
-    from .coordinator import BackupGuardianCoordinator
-    
-    # Crea il coordinator per aggiornare i dati
-    coordinator = BackupGuardianCoordinator(hass)
-    
-    # Primo refresh dei dati
-    await coordinator.async_config_entry_first_refresh()
-    
-    # Salva il coordinator
-    hass.data[DOMAIN][entry.entry_id] = coordinator
-    
-    # Setup delle piattaforme (sensori)
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    # Carica la piattaforma sensor.py
+    await hass.config_entries.async_forward_entry_setups(entry, ["sensor"])
     
     return True
 
-
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Unload a config entry."""
-    # Unload delle piattaforme
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-    
-    if unload_ok:
-        hass.data[DOMAIN].pop(entry.entry_id)
-    
-    return unload_ok
+    """Rimozione dell'integrazione."""
+    return await hass.config_entries.async_unload_platforms(entry, ["sensor"])
