@@ -53,20 +53,24 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
                     _LOGGER.error("No response from Supervisor")
                     return []
                 
-                _LOGGER.debug(f"Supervisor raw response: {result}")
+                _LOGGER.debug(f"Supervisor raw response structure: {type(result)}, keys: {result.keys() if isinstance(result, dict) else 'N/A'}")
                 
-                # Il formato della risposta del Supervisor varia, proviamo entrambi
+                # Il formato della risposta del Supervisor varia
                 backups = []
                 
-                # Prova 1: data.backups
+                # Prova diversi formati di risposta
                 if isinstance(result, dict):
                     if "data" in result and "backups" in result["data"]:
                         backups = result["data"]["backups"]
-                    # Prova 2: backups diretto
                     elif "backups" in result:
                         backups = result["backups"]
                 
                 _LOGGER.info(f"Retrieved {len(backups)} backups from Supervisor")
+                
+                # Log del primo backup per debug
+                if backups:
+                    _LOGGER.debug(f"First backup sample: {backups[0]}")
+                
                 return backups
                 
             except Exception as api_err:
@@ -100,17 +104,36 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
                     _LOGGER.debug(f"Could not parse date: {date_str}")
                     date_obj = datetime.now()
             
-            # Size è in bytes (float)
-            size_bytes = float(backup_data.get("size", 0))
-            size_mb = round(size_bytes / (1024 * 1024), 2)
+            # Gestisci la dimensione - può essere in diversi formati
+            size_bytes = backup_data.get("size", 0)
+            
+            # Debug del formato size
+            _LOGGER.debug(f"Backup size raw value: {size_bytes}, type: {type(size_bytes)}")
+            
+            # Converti in float
+            if isinstance(size_bytes, str):
+                # Rimuovi caratteri non numerici e converti
+                size_bytes = float(''.join(c for c in size_bytes if c.isdigit() or c == '.'))
+            else:
+                size_bytes = float(size_bytes)
+            
+            # Se la dimensione è troppo piccola, potrebbe essere già in MB
+            if size_bytes < 1024:
+                # È probabilmente già in MB
+                size_mb = round(size_bytes, 2)
+                size_bytes = int(size_bytes * 1024 * 1024)
+            else:
+                # È in bytes
+                size_mb = round(size_bytes / (1024 * 1024), 2)
+                size_bytes = int(size_bytes)
             
             # Nome del backup
             name = backup_data.get("name", backup_data.get("slug", "Unknown"))
             
-            return {
+            result = {
                 "name": name,
                 "slug": backup_data.get("slug", ""),
-                "size": int(size_bytes),
+                "size": size_bytes,
                 "size_mb": size_mb,
                 "date": date_obj.strftime("%Y-%m-%d"),
                 "time": date_obj.strftime("%H:%M:%S"),
@@ -120,8 +143,12 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
                 "protected": backup_data.get("protected", False),
                 "compressed": True,
             }
+            
+            _LOGGER.debug(f"Processed backup: {name}, size: {size_mb} MB")
+            return result
+            
         except Exception as err:
-            _LOGGER.error(f"Error processing backup: {err}, data: {backup_data}")
+            _LOGGER.error(f"Error processing backup: {err}, data: {backup_data}", exc_info=True)
             return None
 
     async def _async_update_data(self) -> dict:
@@ -186,4 +213,3 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
                 "total_size": 0,
                 "total_size_mb": 0,
             }
-
