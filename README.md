@@ -240,7 +240,7 @@ Contributi, issue e richieste di funzionalità sono benvenuti!
 
 ## 📄 Licenza
 
-Questo progetto è distribuito sotto licenza MIT.
+Questo progetto è distribuito con licenza **Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)**. Puoi usarlo, modificarlo e condividerlo liberamente, ma **non è consentito alcun utilizzo commerciale**. Per maggiori dettagli: https://creativecommons.org/licenses/by-nc/4.0/
 
 ## 👤 Autore
 
