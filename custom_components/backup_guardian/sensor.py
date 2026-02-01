@@ -21,6 +21,22 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
+# Leggi la versione dal manifest
+import json
+from pathlib import Path
+
+def get_version() -> str:
+    """Get version from manifest."""
+    try:
+        manifest_path = Path(__file__).parent / "manifest.json"
+        with open(manifest_path) as f:
+            manifest = json.load(f)
+        return manifest.get("version", "unknown")
+    except Exception:
+        return "unknown"
+
+VERSION = get_version()
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -61,7 +77,7 @@ class BackupGuardianLastBackupSensor(CoordinatorEntity, SensorEntity):
             name="Backup Guardian",
             manufacturer="Leonardo",
             model="Backup Monitor",
-            sw_version="1.0.6",
+            sw_version=VERSION,
         )
 
     @property
@@ -110,7 +126,7 @@ class BackupGuardianTotalBackupsSensor(CoordinatorEntity, SensorEntity):
             name="Backup Guardian",
             manufacturer="Leonardo",
             model="Backup Monitor",
-            sw_version="1.0.6",
+            sw_version=VERSION,
         )
 
     @property
@@ -161,7 +177,7 @@ class BackupGuardianTotalSizeSensor(CoordinatorEntity, SensorEntity):
             name="Backup Guardian",
             manufacturer="Leonardo",
             model="Backup Monitor",
-            sw_version="1.0.6",
+            sw_version=VERSION,
         )
 
     @property
@@ -170,4 +186,3 @@ class BackupGuardianTotalSizeSensor(CoordinatorEntity, SensorEntity):
         if self.coordinator.data:
             return self.coordinator.data.get("total_size_mb", 0)
         return 0
-
