@@ -142,7 +142,7 @@ lovelace:
 
 L'integrazione crea automaticamente 3 sensori:
 
-### 1. `ssensor.backup_guardian_ultimo_backup`
+### 1. `sensor.backup_guardian_ultimo_backup`
 Mostra la data e ora dell'ultimo backup effettuato.
 
 **Attributi:**
