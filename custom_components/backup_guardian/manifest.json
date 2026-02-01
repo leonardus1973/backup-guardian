@@ -10,5 +10,6 @@
   "requirements": [],
   "version": "1.0.10",
   "icon": "icon.png",
-  "logo": "logo.png"
+  "logo": "logo.png",
+  "license": "CC BY-NC 4.0"
 }
