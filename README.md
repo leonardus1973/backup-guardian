@@ -67,6 +67,57 @@ entity: sensor.totale_backup
 last_backup_entity: sensor.ultimo_backup
 ```
 
+#### Card manuale
+
+Aggiungi un nuova card ed incolla:
+
+```yaml
+type: vertical-stack
+cards:
+  - type: entities
+    title: Backup Guardian - ultimo
+    entities:
+      - entity: sensor.backup_guardian_ultimo_backup
+        name: Ultimo backup
+        icon: mdi:calendar
+      - type: attribute
+        entity: sensor.backup_guardian_ultimo_backup
+        attribute: backup_size
+        name: Dimensione ultimo backup
+        icon: mdi:floppy
+      - type: attribute
+        entity: sensor.backup_guardian_ultimo_backup
+        name: Tipo backup
+        attribute: backup_type
+        icon: mdi:puzzle
+      - type: attribute
+        entity: sensor.backup_guardian_ultimo_backup
+        attribute: backup_name
+        name: Nome
+        icon: mdi:folder
+  - type: entities
+    title: Backup Guardian - totali
+    entities:
+      - entity: sensor.backup_guardian_totale_backup
+        name: Numero backup
+      - entity: sensor.backup_guardian_dimensione_totale
+        name: Dimensione totale
+  - type: markdown
+    title: Lista Backup
+    content: >
+      {% set backups = state_attr('sensor.backup_guardian_totale_backup',
+      'backup_list') %}
+      {% if backups %}
+      **Backup trovati:**<br>
+      {% for b in backups %}
+          {% set ok = '✔️' if b.hash|length == 64 else '❌' %}
+      🗂️ <b>{{ b.name }}</b><br>📅 {{ b.date }} &nbsp;&nbsp;⏰ {{ b.time }}<br>💾 {{ b.size }}<br>🔐 HASH: {{ ok }}<hr>
+      {% endfor %}
+      {% else %}
+      _Nessun backup trovato._
+      {% endif %}
+```
+
 ### 3. Registra la risorsa JavaScript (necessario solo la prima volta)
 
 1. Vai su **Impostazioni** → **Dashboard** → **Risorse**
