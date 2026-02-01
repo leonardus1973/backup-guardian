@@ -53,8 +53,9 @@
 
 ```yaml
 type: custom:backup-guardian-card
-entity: sensor.totale_backup
-last_backup_entity: sensor.ultimo_backup
+entity: sensor.backup_guardian_totale_backup
+last_backup_entity: sensor.backup_guardian_ultimo_backup
+size_entity: sensor.backup_guardian_dimensione_totale
 ```
 
 #### Metodo YAML
@@ -63,8 +64,9 @@ Aggiungi alla tua dashboard Lovelace:
 
 ```yaml
 type: custom:backup-guardian-card
-entity: sensor.totale_backup
-last_backup_entity: sensor.ultimo_backup
+entity: sensor.backup_guardian_totale_backup
+last_backup_entity: sensor.backup_guardian_ultimo_backup
+size_entity: sensor.backup_guardian_dimensione_totale
 ```
 
 #### Card manuale
@@ -140,7 +142,7 @@ lovelace:
 
 L'integrazione crea automaticamente 3 sensori:
 
-### 1. `sensor.ultimo_backup`
+### 1. `ssensor.backup_guardian_ultimo_backup`
 Mostra la data e ora dell'ultimo backup effettuato.
 
 **Attributi:**
@@ -151,13 +153,13 @@ Mostra la data e ora dell'ultimo backup effettuato.
 - `backup_hash`: Hash SHA256 per verifica integrità
 - `backup_type`: Tipo di backup (local)
 
-### 2. `sensor.totale_backup`
+### 2. `sensor.backup_guardian_totale_backup`
 Indica il numero totale di backup presenti.
 
 **Attributi:**
 - `backup_list`: Lista completa di tutti i backup con i loro dettagli
 
-### 3. `sensor.dimensione_totale_backup`
+### 3. `sensor.backup_guardian_dimensione_totale`
 Mostra lo spazio totale occupato dai backup in MB.
 
 ## 🎨 Screenshot della Card
