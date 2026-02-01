@@ -71,7 +71,7 @@ size_entity: sensor.backup_guardian_dimensione_totale
 
 #### Card manuale
 
-Aggiungi un nuova card ed incolla:
+Aggiungi una nuova card ed incolla:
 
 ```yaml
 type: vertical-stack
