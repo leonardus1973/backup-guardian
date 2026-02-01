@@ -25,34 +25,47 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
         )
 
     async def _get_backups_from_supervisor(self) -> list:
-        """Get backups using Supervisor REST API."""
+        """Get backups using Supervisor via hassio component."""
         try:
-            # Verifica che siamo su Hassio/Supervisor (usando il metodo corretto)
+            # Verifica che siamo su Hassio/Supervisor
             if not hassio.is_hassio(self.hass):
                 _LOGGER.error("This integration requires Home Assistant OS or Supervised")
                 return []
             
-            # Ottieni il client del Supervisor
-            supervisor_client = hassio.get_supervisor_client(self.hass)
-            if not supervisor_client:
-                _LOGGER.error("Could not get Supervisor client")
+            # Accedi direttamente al componente hassio
+            if "hassio" not in self.hass.data:
+                _LOGGER.error("Hassio component not loaded")
                 return []
             
-            # Chiama l'API del Supervisor per ottenere i backup
-            _LOGGER.debug("Calling Supervisor API for backups")
+            hassio_component = self.hass.data["hassio"]
+            
+            # Chiama il metodo send_command del componente hassio
+            _LOGGER.debug("Calling Supervisor via hassio component")
             
             try:
-                # Usa il metodo del client per ottenere i backup
-                response = await supervisor_client.get("/backups")
+                result = await hassio_component.send_command(
+                    "/backups",
+                    method="get",
+                    timeout=30
+                )
                 
-                if not response:
+                if not result:
                     _LOGGER.error("No response from Supervisor")
                     return []
                 
-                _LOGGER.debug(f"Supervisor response: {response}")
+                _LOGGER.debug(f"Supervisor raw response: {result}")
                 
-                # Il formato della risposta del Supervisor
-                backups = response.get("backups", [])
+                # Il formato della risposta del Supervisor varia, proviamo entrambi
+                backups = []
+                
+                # Prova 1: data.backups
+                if isinstance(result, dict):
+                    if "data" in result and "backups" in result["data"]:
+                        backups = result["data"]["backups"]
+                    # Prova 2: backups diretto
+                    elif "backups" in result:
+                        backups = result["backups"]
+                
                 _LOGGER.info(f"Retrieved {len(backups)} backups from Supervisor")
                 return backups
                 
@@ -165,7 +178,7 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
 
         except Exception as err:
             _LOGGER.error(f"Error updating backup data: {err}", exc_info=True)
-            # Non lanciare UpdateFailed se è il primo caricamento
+            # Non lanciare UpdateFailed, ritorna dati vuoti
             return {
                 "backups": [],
                 "total_backups": 0,
@@ -173,5 +186,4 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
                 "total_size": 0,
                 "total_size_mb": 0,
             }
-
 
