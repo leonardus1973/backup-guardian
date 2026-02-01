@@ -7,7 +7,7 @@ class BackupGuardianCard extends HTMLElement {
 
   setConfig(config) {
     if (!config.entity) {
-      throw new Error('Devi definire un entity (sensor.totale_backup)');
+      throw new Error('Devi definire un entity (sensor.backup_guardian_totale_backup)');
     }
     this.config = config;
   }
@@ -139,6 +139,32 @@ class BackupGuardianCard extends HTMLElement {
         color: var(--secondary-text-color);
         margin-bottom: 8px;
       }
+
+      .stats-row {
+        display: flex;
+        gap: 12px;
+        margin-top: 12px;
+      }
+
+      .stat-box {
+        flex: 1;
+        background: var(--primary-background-color);
+        padding: 12px;
+        border-radius: 8px;
+        text-align: center;
+      }
+
+      .stat-value {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--primary-color);
+      }
+
+      .stat-label {
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        margin-top: 4px;
+      }
     `;
     
     this.content = document.createElement('div');
@@ -150,18 +176,21 @@ class BackupGuardianCard extends HTMLElement {
 
   _updateCard() {
     const entityId = this.config.entity;
-    const lastBackupEntity = this.config.last_backup_entity || 'sensor.ultimo_backup';
+    const lastBackupEntity = this.config.last_backup_entity || 'sensor.backup_guardian_ultimo_backup';
+    const sizeEntity = this.config.size_entity || 'sensor.backup_guardian_dimensione_totale';
     
     const totalEntity = this._hass.states[entityId];
     const lastEntity = this._hass.states[lastBackupEntity];
+    const sizeEntityObj = this._hass.states[sizeEntity];
     
     if (!totalEntity) {
-      this.content.innerHTML = '<div class="no-backups">Entità non trovata</div>';
+      this.content.innerHTML = '<div class="no-backups">Entità non trovata: ' + entityId + '</div>';
       return;
     }
     
     const totalBackups = totalEntity.state;
     const backupList = totalEntity.attributes.backup_list || [];
+    const totalSize = sizeEntityObj ? sizeEntityObj.state : '0';
     
     let lastBackupHtml = '';
     if (lastEntity && lastEntity.state !== 'Nessun backup') {
@@ -198,9 +227,20 @@ class BackupGuardianCard extends HTMLElement {
       </div>
       
       ${lastBackupHtml}
+
+      <div class="stats-row">
+        <div class="stat-box">
+          <div class="stat-value">${totalBackups}</div>
+          <div class="stat-label">Backup Totali</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value">${totalSize}</div>
+          <div class="stat-label">MB Totali</div>
+        </div>
+      </div>
       
       <button class="total-button ${this._expanded ? 'expanded' : ''}" id="toggleBtn">
-        <span>Totale Backup: ${totalBackups}</span>
+        <span>Mostra Tutti i Backup</span>
         <ha-icon icon="mdi:chevron-down"></ha-icon>
       </button>
       
@@ -251,3 +291,5 @@ window.customCards.push({
   description: 'Card personalizzata per visualizzare i backup di Home Assistant',
   preview: true,
 });
+
+
