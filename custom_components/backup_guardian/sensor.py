@@ -1,11 +1,12 @@
 """Sensor platform for Backup Guardian."""
 import logging
 
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.helpers.entity import DeviceInfo
 
 from .const import (
     DOMAIN,
@@ -41,13 +42,27 @@ async def async_setup_entry(
 class BackupGuardianLastBackupSensor(CoordinatorEntity, SensorEntity):
     """Sensor for the last backup."""
 
+    _attr_has_entity_name = True
+
     def __init__(self, coordinator, entry):
         """Initialize the sensor."""
         super().__init__(coordinator)
         self._entry = entry
         self._attr_name = "Ultimo Backup"
-        self._attr_unique_id = f"{entry.entry_id}_last_backup"
+        self._attr_unique_id = f"{entry.entry_id}_ultimo_backup"
         self._attr_icon = "mdi:backup-restore"
+        self._attr_device_class = SensorDeviceClass.TIMESTAMP
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return device info."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._entry.entry_id)},
+            name="Backup Guardian",
+            manufacturer="Leonardo",
+            model="Backup Monitor",
+            sw_version="1.0.6",
+        )
 
     @property
     def state(self):
@@ -76,14 +91,27 @@ class BackupGuardianLastBackupSensor(CoordinatorEntity, SensorEntity):
 class BackupGuardianTotalBackupsSensor(CoordinatorEntity, SensorEntity):
     """Sensor for total number of backups."""
 
+    _attr_has_entity_name = True
+
     def __init__(self, coordinator, entry):
         """Initialize the sensor."""
         super().__init__(coordinator)
         self._entry = entry
         self._attr_name = "Totale Backup"
-        self._attr_unique_id = f"{entry.entry_id}_total_backups"
+        self._attr_unique_id = f"{entry.entry_id}_totale_backup"
         self._attr_icon = "mdi:counter"
         self._attr_native_unit_of_measurement = "backup"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return device info."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._entry.entry_id)},
+            name="Backup Guardian",
+            manufacturer="Leonardo",
+            model="Backup Monitor",
+            sw_version="1.0.6",
+        )
 
     @property
     def state(self):
@@ -113,14 +141,28 @@ class BackupGuardianTotalBackupsSensor(CoordinatorEntity, SensorEntity):
 class BackupGuardianTotalSizeSensor(CoordinatorEntity, SensorEntity):
     """Sensor for total size of all backups."""
 
+    _attr_has_entity_name = True
+
     def __init__(self, coordinator, entry):
         """Initialize the sensor."""
         super().__init__(coordinator)
         self._entry = entry
-        self._attr_name = "Dimensione Totale Backup"
-        self._attr_unique_id = f"{entry.entry_id}_total_size"
+        self._attr_name = "Dimensione Totale"
+        self._attr_unique_id = f"{entry.entry_id}_dimensione_totale"
         self._attr_icon = "mdi:harddisk"
         self._attr_native_unit_of_measurement = "MB"
+        self._attr_device_class = SensorDeviceClass.DATA_SIZE
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return device info."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._entry.entry_id)},
+            name="Backup Guardian",
+            manufacturer="Leonardo",
+            model="Backup Monitor",
+            sw_version="1.0.6",
+        )
 
     @property
     def state(self):
@@ -128,3 +170,4 @@ class BackupGuardianTotalSizeSensor(CoordinatorEntity, SensorEntity):
         if self.coordinator.data:
             return self.coordinator.data.get("total_size_mb", 0)
         return 0
+
