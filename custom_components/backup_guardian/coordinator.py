@@ -5,8 +5,7 @@ from datetime import datetime, timedelta
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.components import hassio
+from homeassistant.helpers import hassio
 
 from .const import DOMAIN, UPDATE_INTERVAL
 
@@ -28,46 +27,38 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
     async def _get_backups_from_supervisor(self) -> list:
         """Get backups using Supervisor REST API."""
         try:
-            # Verifica che siamo su Hassio/Supervisor
+            # Verifica che siamo su Hassio/Supervisor (usando il metodo corretto)
             if not hassio.is_hassio(self.hass):
                 _LOGGER.error("This integration requires Home Assistant OS or Supervised")
                 return []
             
-            # Ottieni il token del Supervisor
-            token = hassio.get_supervisor_token(self.hass)
-            if not token:
-                _LOGGER.error("Could not get Supervisor token")
+            # Ottieni il client del Supervisor
+            supervisor_client = hassio.get_supervisor_client(self.hass)
+            if not supervisor_client:
+                _LOGGER.error("Could not get Supervisor client")
                 return []
             
-            # Usa il client aiohttp di HA
-            session = async_get_clientsession(self.hass)
+            # Chiama l'API del Supervisor per ottenere i backup
+            _LOGGER.debug("Calling Supervisor API for backups")
             
-            # Chiama l'API del Supervisor
-            url = "http://supervisor/backups"
-            headers = {
-                "Authorization": f"Bearer {token}",
-                "Content-Type": "application/json",
-            }
-            
-            _LOGGER.debug(f"Calling Supervisor API: {url}")
-            
-            async with session.get(url, headers=headers, timeout=30) as response:
-                if response.status != 200:
-                    text = await response.text()
-                    _LOGGER.error(f"Supervisor API error {response.status}: {text}")
+            try:
+                # Usa il metodo del client per ottenere i backup
+                response = await supervisor_client.get("/backups")
+                
+                if not response:
+                    _LOGGER.error("No response from Supervisor")
                     return []
                 
-                data = await response.json()
-                _LOGGER.debug(f"Supervisor response: {data}")
+                _LOGGER.debug(f"Supervisor response: {response}")
                 
-                # La risposta del Supervisor ha formato: {"result": "ok", "data": {"backups": [...]}}
-                if data.get("result") == "ok":
-                    backups = data.get("data", {}).get("backups", [])
-                    _LOGGER.info(f"Retrieved {len(backups)} backups from Supervisor")
-                    return backups
-                else:
-                    _LOGGER.error(f"Supervisor returned error: {data}")
-                    return []
+                # Il formato della risposta del Supervisor
+                backups = response.get("backups", [])
+                _LOGGER.info(f"Retrieved {len(backups)} backups from Supervisor")
+                return backups
+                
+            except Exception as api_err:
+                _LOGGER.error(f"Supervisor API call failed: {api_err}", exc_info=True)
+                return []
                     
         except Exception as err:
             _LOGGER.error(f"Error getting backups from Supervisor: {err}", exc_info=True)
@@ -182,4 +173,5 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
                 "total_size": 0,
                 "total_size_mb": 0,
             }
+
 
