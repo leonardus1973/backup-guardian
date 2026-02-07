@@ -4,8 +4,7 @@
 
 ![Version](https://img.shields.io/github/v/release/leonardus1973/backup-guardian)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2023.1+-blue)
-![License](https://img.shields.io/github/license/leonardus1973/backup-guardian)
-![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)
+![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-green.svg)
 
 
 ## ✨ Caratteristiche
