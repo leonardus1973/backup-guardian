@@ -290,7 +290,7 @@ Apri un [Issue](https://github.com/leonardus1973/backup-guardian/issues) con:
 
 ## 📄 Licenza
 
-Questo progetto è distribuito sotto licenza **MIT**. Vedi il file [LICENSE](LICENSE) per i dettagli completi.
+Questo progetto è distribuito con licenza **Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)**. Puoi usarlo, modificarlo e condividerlo liberamente, ma **non è consentito alcun utilizzo commerciale**. Per maggiori dettagli: https://creativecommons.org/licenses/by-nc/4.0/
 
 ## 👤 Autore
 
@@ -327,17 +327,6 @@ Se questo progetto ti è utile, considera di:
 **Ultimo aggiornamento**: Febbraio 2026
 
 Per supporto, domande o feedback, apri un [Issue su GitHub](https://github.com/leonardus1973/backup-guardian/issues).
-## 📄 Licenza
-
-Questo progetto è distribuito con licenza **Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)**. Puoi usarlo, modificarlo e condividerlo liberamente, ma **non è consentito alcun utilizzo commerciale**. Per maggiori dettagli: https://creativecommons.org/licenses/by-nc/4.0/
-
-## 👤 Autore
-
-**Leonardo** - [@leonardus1973](https://github.com/leonardus1973)
-
-## ⭐ Supporto
-
-Se questo progetto ti è utile, considera di lasciare una stella su GitHub! ⭐
 
 ---
 
