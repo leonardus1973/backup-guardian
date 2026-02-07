@@ -292,6 +292,12 @@ Apri un [Issue](https://github.com/leonardus1973/backup-guardian/issues) con:
 
 Questo progetto è distribuito con licenza **Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)**. Puoi usarlo, modificarlo e condividerlo liberamente, ma **non è consentito alcun utilizzo commerciale**. Per maggiori dettagli: https://creativecommons.org/licenses/by-nc/4.0/
 
+## 📄 License
+
+This project is licensed under the **Creative Commons Attribution-NonCommercial 4.0 International License**.
+Commercial use is **explicitly forbidden** without prior written permission.
+If you need a commercial license, please contact the author.
+
 ## 👤 Autore
 
 **Leonardo** - [@leonardus1973](https://github.com/leonardus1973)
