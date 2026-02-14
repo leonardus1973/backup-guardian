@@ -2,6 +2,9 @@
 
 DOMAIN = "backup_guardian"
 
+# Platforms
+PLATFORMS = ["sensor"]
+
 # Update interval in seconds (5 minutes)
 UPDATE_INTERVAL = 300
 
