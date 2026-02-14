@@ -255,6 +255,19 @@ logger:
 
 Poi riavvia Home Assistant e controlla i log in **Impostazioni** → **Sistema** → **Log**.
 
+### ⚠️ IMPORTANTE: Installazione File JavaScript
+
+HACS potrebbe non copiare automaticamente il file JavaScript. Se la card non appare:
+
+1. Con File Editor, crea la cartella: `/config/www/community/backup_guardian/`
+2. Copia il file da:
+   `/config/custom_components/backup_guardian/www/backup-guardian-card.js`
+   a:
+   `/config/www/community/backup_guardian/backup-guardian-card.js`
+3. Riavvia Home Assistant
+4. Svuota cache browser (Ctrl+Shift+R)
+
+
 ## 🚀 Funzionalità Future
 
 Pianificate per le prossime versioni:
