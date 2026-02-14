@@ -8,7 +8,7 @@
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/leonardus1973/backup-guardian/issues",
   "requirements": [],
-  "version": "1.0.15",
+  "version": "1.0.16",
   "icon": "icon.png",
   "logo": "logo.png",
   "license": "CC BY-NC 4.0"
