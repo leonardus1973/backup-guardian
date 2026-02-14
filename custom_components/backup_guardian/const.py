@@ -1,20 +1,18 @@
-"""Constants for Backup Guardian integration."""
+"""Constants for the Backup Guardian integration."""
 
 DOMAIN = "backup_guardian"
-PLATFORMS = ["sensor"]
 
-# Intervallo di aggiornamento (in secondi)
-UPDATE_INTERVAL = 300  # 5 minuti
+# Update interval in seconds (5 minutes)
+UPDATE_INTERVAL = 300
 
-# Attributi dei sensori
+# Sensor attributes
 ATTR_BACKUP_NAME = "backup_name"
 ATTR_BACKUP_DATE = "backup_date"
 ATTR_BACKUP_TIME = "backup_time"
 ATTR_BACKUP_SIZE = "backup_size"
 ATTR_BACKUP_HASH = "backup_hash"
 ATTR_BACKUP_TYPE = "backup_type"
-ATTR_BACKUP_PROTECTED = "protected"
-ATTR_BACKUP_COMPRESSED = "compressed"
-ATTR_BACKUP_LIST = "backup_list"
 ATTR_BACKUP_SLUG = "backup_slug"
+ATTR_BACKUP_LIST = "backup_list"
+ATTR_BACKUP_DESTINATION = "backup_destination"  # NEW: Destinazione backup (local, google_drive, dropbox, ecc.)
 
