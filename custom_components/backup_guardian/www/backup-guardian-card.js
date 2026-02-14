@@ -41,9 +41,9 @@ class BackupGuardianCard extends HTMLElement {
         color: var(--primary-text-color);
       }
       
-      .header ha-icon {
+      .header-icon {
         margin-right: 12px;
-        color: var(--primary-color);
+        font-size: 24px;
       }
       
       .last-backup {
@@ -67,6 +67,17 @@ class BackupGuardianCard extends HTMLElement {
       
       .value {
         color: var(--primary-text-color);
+      }
+
+      .destination-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        background: var(--primary-color);
+        color: white;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
       }
       
       .hash {
@@ -98,12 +109,14 @@ class BackupGuardianCard extends HTMLElement {
         opacity: 0.9;
         transform: translateY(-1px);
       }
-      
-      .total-button ha-icon {
+
+      .chevron {
+        display: inline-block;
         transition: transform 0.3s ease;
+        font-size: 20px;
       }
       
-      .total-button.expanded ha-icon {
+      .total-button.expanded .chevron {
         transform: rotate(180deg);
       }
       
@@ -125,6 +138,13 @@ class BackupGuardianCard extends HTMLElement {
         border-radius: 8px;
         margin-bottom: 8px;
         border-left: 3px solid var(--primary-color);
+      }
+
+      .backup-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
       }
       
       .no-backups {
@@ -195,12 +215,17 @@ class BackupGuardianCard extends HTMLElement {
     let lastBackupHtml = '';
     if (lastEntity && lastEntity.state !== 'Nessun backup') {
       const attrs = lastEntity.attributes;
+      const destination = attrs.backup_destination || 'Locale';
+      
       lastBackupHtml = `
         <div class="section-title">📦 Ultimo Backup</div>
         <div class="last-backup">
           <div class="backup-info">
             <span class="label">Nome:</span>
             <span class="value">${attrs.backup_name || 'N/A'}</span>
+            
+            <span class="label">Destinazione:</span>
+            <span class="value"><span class="destination-badge">${destination}</span></span>
             
             <span class="label">Data:</span>
             <span class="value">${attrs.backup_date || 'N/A'}</span>
@@ -222,7 +247,7 @@ class BackupGuardianCard extends HTMLElement {
     
     this.content.innerHTML = `
       <div class="header">
-        <ha-icon icon="mdi:shield-check"></ha-icon>
+        <span class="header-icon">🛡️</span>
         Backup Guardian
       </div>
       
@@ -241,16 +266,17 @@ class BackupGuardianCard extends HTMLElement {
       
       <button class="total-button ${this._expanded ? 'expanded' : ''}" id="toggleBtn">
         <span>Mostra Tutti i Backup</span>
-        <ha-icon icon="mdi:chevron-down"></ha-icon>
+        <span class="chevron">▼</span>
       </button>
       
       <div class="backup-list ${this._expanded ? 'expanded' : ''}" id="backupList">
         ${backupList.length > 0 ? backupList.map((backup, index) => `
           <div class="backup-item">
+            <div class="backup-item-header">
+              <strong>${backup.name}</strong>
+              <span class="destination-badge">${backup.destination || 'Locale'}</span>
+            </div>
             <div class="backup-info">
-              <span class="label">Nome:</span>
-              <span class="value">${backup.name}</span>
-              
               <span class="label">Data/Ora:</span>
               <span class="value">${backup.date} ${backup.time}</span>
               
@@ -281,6 +307,7 @@ class BackupGuardianCard extends HTMLElement {
   }
 }
 
+// Definisci il custom element
 customElements.define('backup-guardian-card', BackupGuardianCard);
 
 // Registra la card in Home Assistant
@@ -292,4 +319,5 @@ window.customCards.push({
   preview: true,
 });
 
+console.log('✅ Backup Guardian Card loaded successfully!');
 
