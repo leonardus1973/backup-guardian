@@ -90,8 +90,16 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
         except Exception:
             return "N/A"
 
-    def _process_backup(self, backup_data: dict) -> dict | None:
-        """Process a single backup from API data."""
+    def _process_backup(self, backup_data: dict, source: str = "local") -> dict | None:
+        """Process a single backup from API data.
+        
+        Args:
+            backup_data: Raw backup data from API
+            source: Source/destination of backup (local, google_drive, dropbox, etc.)
+        
+        Returns:
+            Processed backup dictionary with all fields
+        """
         try:
             # Data dal Supervisor è in formato ISO UTC
             date_str = backup_data.get("date", "")
@@ -145,6 +153,17 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
             # Nome del backup
             name = backup_data.get("name", backup_data.get("slug", "Unknown"))
             
+            # Determina il nome friendly della destinazione
+            destination_map = {
+                "local": "Home Assistant Locale",
+                "google_drive": "Google Drive",
+                "dropbox": "Dropbox",
+                "onedrive": "OneDrive",
+                "nas": "NAS",
+                "ftp": "FTP",
+            }
+            destination_friendly = destination_map.get(source, source.title())
+            
             result = {
                 "name": name,
                 "slug": backup_data.get("slug", ""),
@@ -157,9 +176,11 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
                 "type": backup_data.get("type", "full"),
                 "protected": backup_data.get("protected", False),
                 "compressed": True,
+                "destination": source,  # Codice destinazione (local, google_drive, ecc.)
+                "destination_name": destination_friendly,  # Nome user-friendly
             }
             
-            _LOGGER.debug(f"Processed backup: {name}, size: {size_mb} MB, time: {date_obj_local.strftime('%H:%M:%S')}")
+            _LOGGER.debug(f"Processed backup: {name}, size: {size_mb} MB, time: {date_obj_local.strftime('%H:%M:%S')}, destination: {destination_friendly}")
             return result
             
         except Exception as err:
@@ -169,7 +190,7 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self) -> dict:
         """Fetch data from Supervisor API."""
         try:
-            # Ottieni i backup dal Supervisor
+            # Ottieni i backup dal Supervisor (locale)
             backups_raw = await self._get_backups_from_supervisor()
             
             if not backups_raw:
@@ -182,12 +203,21 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
                     "total_size_mb": 0,
                 }
             
-            # Processa ogni backup
+            # Processa ogni backup locale
             backups = []
             for backup_raw in backups_raw:
-                backup_info = self._process_backup(backup_raw)
+                backup_info = self._process_backup(backup_raw, source="local")
                 if backup_info:
                     backups.append(backup_info)
+            
+            # TODO: In futuro qui aggiungeremo:
+            # - Backup da Google Drive
+            # - Backup da Dropbox
+            # - Backup da OneDrive
+            # Esempio:
+            # google_backups = await self._get_backups_from_google_drive()
+            # for backup in google_backups:
+            #     backups.append(self._process_backup(backup, source="google_drive"))
             
             if not backups:
                 return {
