@@ -64,17 +64,17 @@ La card mostra:
 
 #### A. Registra la Risorsa JavaScript
 
+**L'integrazione copia automaticamente** il file JavaScript al primo avvio.
+
 1. Vai su **Impostazioni** → **Dashboard** → **Risorse**
 2. Clicca su **+ Aggiungi risorsa**
-3. Inserisci i seguenti dati:
+3. Inserisci:
+   - **URL**: `/local/community/backup_guardian/backup-guardian-card.js`
+   - **Tipo**: **Modulo JavaScript**
+4. **Crea**
+5. **Svuota cache browser**: Ctrl+Shift+R
 
-**Se hai installato via HACS:**
-- **URL**: `/hacsfiles/backup_guardian/backup-guardian-card.js`
-- **Tipo di risorsa**: **Modulo JavaScript**
-
-**Se hai installato manualmente:**
-- **URL**: `/local/community/backup_guardian/backup-guardian-card.js`
-- **Tipo di risorsa**: **Modulo JavaScript**
+**Nota**: Il file viene copiato automaticamente in `/config/www/community/backup_guardian/` al primo avvio dell'integrazione.
 
 4. Clicca **Crea**
 
