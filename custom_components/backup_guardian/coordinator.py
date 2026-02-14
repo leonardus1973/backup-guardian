@@ -2,10 +2,12 @@
 import hashlib
 import logging
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.helpers import hassio
+from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, UPDATE_INTERVAL
 
@@ -91,18 +93,31 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
     def _process_backup(self, backup_data: dict) -> dict | None:
         """Process a single backup from API data."""
         try:
-            # Data dal Supervisor è in formato ISO
+            # Data dal Supervisor è in formato ISO UTC
             date_str = backup_data.get("date", "")
+            
             try:
-                # Formato: "2024-01-31T10:30:00.123456+00:00"
-                date_obj = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
-            except Exception:
-                try:
-                    # Prova formato semplice
-                    date_obj = datetime.strptime(date_str.split(".")[0], "%Y-%m-%dT%H:%M:%S")
-                except Exception:
-                    _LOGGER.debug(f"Could not parse date: {date_str}")
-                    date_obj = datetime.now()
+                # Formato: "2026-01-31T10:30:00.123456+00:00" (UTC)
+                # Convertiamo in datetime UTC
+                if "T" in date_str:
+                    date_obj_utc = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+                elif " " in date_str:
+                    date_obj_utc = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
+                    # Assumiamo sia UTC se non ha timezone
+                    date_obj_utc = date_obj_utc.replace(tzinfo=ZoneInfo("UTC"))
+                else:
+                    date_obj_utc = datetime.strptime(date_str, "%Y-%m-%d")
+                    date_obj_utc = date_obj_utc.replace(tzinfo=ZoneInfo("UTC"))
+                
+                # Convertiamo da UTC al fuso orario locale di Home Assistant
+                date_obj_local = dt_util.as_local(date_obj_utc)
+                
+                _LOGGER.debug(f"Backup date conversion: UTC={date_obj_utc.isoformat()} -> Local={date_obj_local.isoformat()}")
+                
+            except Exception as date_err:
+                _LOGGER.debug(f"Could not parse date {date_str}: {date_err}")
+                # Fallback: usa l'ora corrente locale
+                date_obj_local = dt_util.now()
             
             # Gestisci la dimensione - può essere in diversi formati
             size_bytes = backup_data.get("size", 0)
@@ -135,16 +150,16 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
                 "slug": backup_data.get("slug", ""),
                 "size": size_bytes,
                 "size_mb": size_mb,
-                "date": date_obj.strftime("%Y-%m-%d"),
-                "time": date_obj.strftime("%H:%M:%S"),
-                "datetime": date_obj,
+                "date": date_obj_local.strftime("%Y-%m-%d"),
+                "time": date_obj_local.strftime("%H:%M:%S"),
+                "datetime": date_obj_local,
                 "hash": self._calculate_hash_from_slug(backup_data.get("slug", "")),
                 "type": backup_data.get("type", "full"),
                 "protected": backup_data.get("protected", False),
                 "compressed": True,
             }
             
-            _LOGGER.debug(f"Processed backup: {name}, size: {size_mb} MB")
+            _LOGGER.debug(f"Processed backup: {name}, size: {size_mb} MB, time: {date_obj_local.strftime('%H:%M:%S')}")
             return result
             
         except Exception as err:
