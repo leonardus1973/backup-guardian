@@ -17,6 +17,7 @@ from .const import (
     ATTR_BACKUP_HASH,
     ATTR_BACKUP_TYPE,
     ATTR_BACKUP_LIST,
+    ATTR_BACKUP_DESTINATION,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -100,6 +101,7 @@ class BackupGuardianLastBackupSensor(CoordinatorEntity, SensorEntity):
                 ATTR_BACKUP_SIZE: f"{last['size_mb']} MB",
                 ATTR_BACKUP_HASH: last["hash"],
                 ATTR_BACKUP_TYPE: last["type"],
+                ATTR_BACKUP_DESTINATION: last.get("destination_name", "Locale"),  # NEW
             }
         return {}
 
@@ -149,6 +151,7 @@ class BackupGuardianTotalBackupsSensor(CoordinatorEntity, SensorEntity):
                     "time": backup["time"],
                     "size": f"{backup['size_mb']} MB",
                     "hash": backup["hash"],
+                    "destination": backup.get("destination_name", "Locale"),  # NEW
                 })
             return {ATTR_BACKUP_LIST: backup_list}
         return {}
