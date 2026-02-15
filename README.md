@@ -355,7 +355,7 @@ Se questo progetto ti è utile, considera di:
 - ⭐ Lasciare una **stella** su GitHub
 - 🐛 Segnalare **bug** o suggerire **funzionalità**
 - 📢 Condividere il progetto con altri utenti di Home Assistant
-- ☕ Offrire un caffè virtuale all'autore
+- ☕ Offrire un caffè virtuale all'autore - [![PayPal](https://img.shields.io/badge/PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://paypal.me/leonardogarraffo)
 
 ## 📋 Requisiti di Sistema
 
