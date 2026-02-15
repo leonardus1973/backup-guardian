@@ -140,24 +140,79 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
             List of backup dictionaries
         """
         try:
-            # Use hassio component to communicate with Supervisor
-            response = await hassio.async_get_backups_info(self.hass)
+            # Try to get backups using backup manager (HA 2023.6+)
+            try:
+                from homeassistant.components.backup import BackupManager
+                backup_manager: BackupManager = self.hass.data.get("backup_manager")
+                
+                if backup_manager:
+                    backups_data = await backup_manager.async_get_backups()
+                    if backups_data:
+                        _LOGGER.debug(f"Found {len(backups_data)} local backups via BackupManager")
+                        
+                        # Process backups from backup manager
+                        backups = []
+                        for backup_id, backup_data in backups_data.items():
+                            # Convert backup manager format to our format
+                            converted = {
+                                "slug": backup_id,
+                                "name": backup_data.name,
+                                "date": backup_data.date.isoformat(),
+                                "size": backup_data.size,
+                                "type": "full",
+                                "protected": backup_data.protected,
+                                "compressed": True,
+                            }
+                            backup_info = self._process_backup(converted, source=DESTINATION_LOCAL)
+                            if backup_info:
+                                backups.append(backup_info)
+                        
+                        return backups
+            except (ImportError, AttributeError, KeyError) as e:
+                _LOGGER.debug(f"BackupManager not available: {e}, trying hassio API")
 
-            if not response or "backups" not in response:
-                _LOGGER.warning("No backups found in Supervisor response")
-                return []
+            # Fallback: try hassio websocket API
+            try:
+                websocket = self.hass.components.hassio
+                if hasattr(websocket, 'async_get_supervisor_info'):
+                    # Try to call supervisor API directly
+                    import aiohttp
+                    
+                    # Get supervisor token
+                    supervisor_token = self.hass.data.get("hassio_auth", {}).get("token")
+                    if not supervisor_token:
+                        _LOGGER.warning("No supervisor token available")
+                        return []
+                    
+                    url = "http://supervisor/backups"
+                    headers = {
+                        "Authorization": f"Bearer {supervisor_token}",
+                        "Content-Type": "application/json",
+                    }
+                    
+                    timeout = aiohttp.ClientTimeout(total=30)
+                    async with aiohttp.ClientSession(timeout=timeout) as session:
+                        async with session.get(url, headers=headers) as response:
+                            if response.status == 200:
+                                data = await response.json()
+                                backups_data = data.get("data", {}).get("backups", [])
+                                _LOGGER.debug(f"Found {len(backups_data)} local backups via Supervisor API")
+                                
+                                # Process each backup
+                                backups = []
+                                for backup_data in backups_data:
+                                    backup_info = self._process_backup(backup_data, source=DESTINATION_LOCAL)
+                                    if backup_info:
+                                        backups.append(backup_info)
+                                
+                                return backups
+                            else:
+                                _LOGGER.warning(f"Supervisor API returned status {response.status}")
+            except Exception as e:
+                _LOGGER.debug(f"Hassio API not available: {e}")
 
-            backups_data = response["backups"]
-            _LOGGER.debug(f"Found {len(backups_data)} local backups")
-
-            # Process each backup
-            backups = []
-            for backup_data in backups_data:
-                backup_info = self._process_backup(backup_data, source=DESTINATION_LOCAL)
-                if backup_info:
-                    backups.append(backup_info)
-
-            return backups
+            _LOGGER.warning("No backup source available")
+            return []
 
         except Exception as err:
             _LOGGER.error(f"Error fetching backups from Supervisor: {err}", exc_info=True)
@@ -257,4 +312,5 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
         except Exception as err:
             _LOGGER.error(f"Error refreshing Google Drive token: {err}", exc_info=True)
             return False
+            
             
