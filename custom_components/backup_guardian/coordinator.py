@@ -1,260 +1,264 @@
-"""Data coordinator for Backup Guardian."""
-import hashlib
-import logging
+"""DataUpdateCoordinator for Backup Guardian."""
 from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
+import logging
+from typing import Any
 
+from homeassistant.components import hassio
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from homeassistant.helpers import hassio
 from homeassistant.util import dt as dt_util
+from homeassistant.exceptions import ConfigEntryNotReady
 
-from .const import DOMAIN, UPDATE_INTERVAL
+from .const import (
+    DOMAIN,
+    UPDATE_INTERVAL,
+    DESTINATION_LOCAL,
+    DESTINATION_GOOGLE_DRIVE,
+    DESTINATION_NAMES,
+    CONF_GOOGLE_DRIVE_ENABLED,
+    CONF_GOOGLE_CLIENT_ID,
+    CONF_GOOGLE_CLIENT_SECRET,
+    CONF_GOOGLE_FOLDER_ID,
+    CONF_GOOGLE_TOKEN,
+)
+from .google_drive import GoogleDriveClient
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class BackupGuardianCoordinator(DataUpdateCoordinator):
-    """Class to manage fetching Backup Guardian data."""
+    """Class to manage fetching backup data."""
 
     def __init__(self, hass: HomeAssistant) -> None:
-        """Initialize."""
+        """Initialize coordinator."""
         super().__init__(
             hass,
             _LOGGER,
             name=DOMAIN,
             update_interval=timedelta(seconds=UPDATE_INTERVAL),
         )
+        self._google_drive_client: GoogleDriveClient | None = None
+        self._google_drive_enabled = False
 
-    async def _get_backups_from_supervisor(self) -> list:
-        """Get backups using Supervisor via hassio component."""
-        try:
-            # Verifica che siamo su Hassio/Supervisor
-            if not hassio.is_hassio(self.hass):
-                _LOGGER.error("This integration requires Home Assistant OS or Supervised")
-                return []
-            
-            # Accedi direttamente al componente hassio
-            if "hassio" not in self.hass.data:
-                _LOGGER.error("Hassio component not loaded")
-                return []
-            
-            hassio_component = self.hass.data["hassio"]
-            
-            # Chiama il metodo send_command del componente hassio
-            _LOGGER.debug("Calling Supervisor via hassio component")
-            
-            try:
-                result = await hassio_component.send_command(
-                    "/backups",
-                    method="get",
-                    timeout=30
-                )
-                
-                if not result:
-                    _LOGGER.error("No response from Supervisor")
-                    return []
-                
-                _LOGGER.debug(f"Supervisor raw response structure: {type(result)}, keys: {result.keys() if isinstance(result, dict) else 'N/A'}")
-                
-                # Il formato della risposta del Supervisor varia
-                backups = []
-                
-                # Prova diversi formati di risposta
-                if isinstance(result, dict):
-                    if "data" in result and "backups" in result["data"]:
-                        backups = result["data"]["backups"]
-                    elif "backups" in result:
-                        backups = result["backups"]
-                
-                _LOGGER.info(f"Retrieved {len(backups)} backups from Supervisor")
-                
-                # Log del primo backup per debug
-                if backups:
-                    _LOGGER.debug(f"First backup sample: {backups[0]}")
-                
-                return backups
-                
-            except Exception as api_err:
-                _LOGGER.error(f"Supervisor API call failed: {api_err}", exc_info=True)
-                return []
-                    
-        except Exception as err:
-            _LOGGER.error(f"Error getting backups from Supervisor: {err}", exc_info=True)
-            return []
-
-    def _calculate_hash_from_slug(self, slug: str) -> str:
-        """Calculate a hash from backup slug for identification."""
-        try:
-            return hashlib.sha256(slug.encode()).hexdigest()
-        except Exception:
-            return "N/A"
-
-    def _process_backup(self, backup_data: dict, source: str = "local") -> dict | None:
-        """Process a single backup from API data.
+    async def async_setup_google_drive(self, config_data: dict) -> bool:
+        """Setup Google Drive client if enabled.
         
         Args:
-            backup_data: Raw backup data from API
-            source: Source/destination of backup (local, google_drive, dropbox, etc.)
-        
+            config_data: Configuration entry data
+            
         Returns:
-            Processed backup dictionary with all fields
+            True if setup successful or not needed, False if failed
         """
-        try:
-            # Data dal Supervisor è in formato ISO UTC
-            date_str = backup_data.get("date", "")
-            
-            try:
-                # Formato: "2026-01-31T10:30:00.123456+00:00" (UTC)
-                # Convertiamo in datetime UTC
-                if "T" in date_str:
-                    date_obj_utc = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
-                elif " " in date_str:
-                    date_obj_utc = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
-                    # Assumiamo sia UTC se non ha timezone
-                    date_obj_utc = date_obj_utc.replace(tzinfo=ZoneInfo("UTC"))
-                else:
-                    date_obj_utc = datetime.strptime(date_str, "%Y-%m-%d")
-                    date_obj_utc = date_obj_utc.replace(tzinfo=ZoneInfo("UTC"))
-                
-                # Convertiamo da UTC al fuso orario locale di Home Assistant
-                date_obj_local = dt_util.as_local(date_obj_utc)
-                
-                _LOGGER.debug(f"Backup date conversion: UTC={date_obj_utc.isoformat()} -> Local={date_obj_local.isoformat()}")
-                
-            except Exception as date_err:
-                _LOGGER.debug(f"Could not parse date {date_str}: {date_err}")
-                # Fallback: usa l'ora corrente locale
-                date_obj_local = dt_util.now()
-            
-            # Gestisci la dimensione - può essere in diversi formati
-            size_bytes = backup_data.get("size", 0)
-            
-            # Debug del formato size
-            _LOGGER.debug(f"Backup size raw value: {size_bytes}, type: {type(size_bytes)}")
-            
-            # Converti in float
-            if isinstance(size_bytes, str):
-                # Rimuovi caratteri non numerici e converti
-                size_bytes = float(''.join(c for c in size_bytes if c.isdigit() or c == '.'))
-            else:
-                size_bytes = float(size_bytes)
-            
-            # Se la dimensione è troppo piccola, potrebbe essere già in MB
-            if size_bytes < 1024:
-                # È probabilmente già in MB
-                size_mb = round(size_bytes, 2)
-                size_bytes = int(size_bytes * 1024 * 1024)
-            else:
-                # È in bytes
-                size_mb = round(size_bytes / (1024 * 1024), 2)
-                size_bytes = int(size_bytes)
-            
-            # Nome del backup
-            name = backup_data.get("name", backup_data.get("slug", "Unknown"))
-            
-            # Determina il nome friendly della destinazione
-            destination_map = {
-                "local": "Home Assistant Locale",
-                "google_drive": "Google Drive",
-                "dropbox": "Dropbox",
-                "onedrive": "OneDrive",
-                "nas": "NAS",
-                "ftp": "FTP",
-            }
-            destination_friendly = destination_map.get(source, source.title())
-            
-            result = {
-                "name": name,
-                "slug": backup_data.get("slug", ""),
-                "size": size_bytes,
-                "size_mb": size_mb,
-                "date": date_obj_local.strftime("%Y-%m-%d"),
-                "time": date_obj_local.strftime("%H:%M:%S"),
-                "datetime": date_obj_local,
-                "hash": self._calculate_hash_from_slug(backup_data.get("slug", "")),
-                "type": backup_data.get("type", "full"),
-                "protected": backup_data.get("protected", False),
-                "compressed": True,
-                "destination": source,  # Codice destinazione (local, google_drive, ecc.)
-                "destination_name": destination_friendly,  # Nome user-friendly
-            }
-            
-            _LOGGER.debug(f"Processed backup: {name}, size: {size_mb} MB, time: {date_obj_local.strftime('%H:%M:%S')}, destination: {destination_friendly}")
-            return result
-            
-        except Exception as err:
-            _LOGGER.error(f"Error processing backup: {err}, data: {backup_data}", exc_info=True)
-            return None
+        self._google_drive_enabled = config_data.get(CONF_GOOGLE_DRIVE_ENABLED, False)
+        
+        if not self._google_drive_enabled:
+            _LOGGER.info("Google Drive integration disabled")
+            self._google_drive_client = None
+            return True
 
-    async def _async_update_data(self) -> dict:
-        """Fetch data from Supervisor API."""
         try:
-            # Ottieni i backup dal Supervisor (locale)
-            backups_raw = await self._get_backups_from_supervisor()
+            # Extract Google credentials
+            credentials = {
+                "client_id": config_data.get(CONF_GOOGLE_CLIENT_ID),
+                "client_secret": config_data.get(CONF_GOOGLE_CLIENT_SECRET),
+                "folder_id": config_data.get(CONF_GOOGLE_FOLDER_ID, "root"),
+                "token": config_data.get(CONF_GOOGLE_TOKEN, {}).get("access_token"),
+                "refresh_token": config_data.get(CONF_GOOGLE_TOKEN, {}).get("refresh_token"),
+            }
+
+            # Validate we have all required credentials
+            if not all([
+                credentials["client_id"],
+                credentials["client_secret"],
+                credentials["token"],
+            ]):
+                _LOGGER.error("Missing Google Drive credentials")
+                return False
+
+            # Initialize Google Drive client
+            self._google_drive_client = GoogleDriveClient(self.hass, credentials)
             
-            if not backups_raw:
-                _LOGGER.info("No backups found")
-                return {
-                    "backups": [],
-                    "total_backups": 0,
-                    "last_backup": None,
-                    "total_size": 0,
-                    "total_size_mb": 0,
-                }
+            # Setup the client
+            if not await self._google_drive_client.async_setup():
+                _LOGGER.error("Failed to setup Google Drive client")
+                self._google_drive_client = None
+                return False
+
+            _LOGGER.info("Google Drive integration enabled successfully")
+            return True
+
+        except Exception as err:
+            _LOGGER.error(f"Error setting up Google Drive: {err}", exc_info=True)
+            self._google_drive_client = None
+            return False
+
+    async def _async_update_data(self) -> dict[str, Any]:
+        """Fetch data from Supervisor API and Google Drive."""
+        try:
+            # Fetch local backups from Supervisor
+            local_backups = await self._get_backups_from_supervisor()
             
-            # Processa ogni backup locale
-            backups = []
-            for backup_raw in backups_raw:
-                backup_info = self._process_backup(backup_raw, source="local")
-                if backup_info:
-                    backups.append(backup_info)
+            # Fetch Google Drive backups if enabled
+            drive_backups = []
+            if self._google_drive_enabled and self._google_drive_client:
+                try:
+                    drive_backups = await self._google_drive_client.async_get_backups()
+                    _LOGGER.debug(f"Fetched {len(drive_backups)} backups from Google Drive")
+                except Exception as err:
+                    _LOGGER.error(f"Error fetching Google Drive backups: {err}")
+                    # Don't fail the entire update, just log the error
+
+            # Merge backups from all sources
+            all_backups = local_backups + drive_backups
             
-            # TODO: In futuro qui aggiungeremo:
-            # - Backup da Google Drive
-            # - Backup da Dropbox
-            # - Backup da OneDrive
-            # Esempio:
-            # google_backups = await self._get_backups_from_google_drive()
-            # for backup in google_backups:
-            #     backups.append(self._process_backup(backup, source="google_drive"))
-            
-            if not backups:
-                return {
-                    "backups": [],
-                    "total_backups": 0,
-                    "last_backup": None,
-                    "total_size": 0,
-                    "total_size_mb": 0,
-                }
-            
-            # Ordina per data (più recente prima)
-            backups.sort(key=lambda x: x["datetime"], reverse=True)
-            
-            # Calcola dimensione totale
-            total_size = sum(b["size"] for b in backups)
-            total_size_mb = round(total_size / (1024 * 1024), 2)
-            
-            # Ultimo backup
-            last_backup = backups[0]
-            
-            _LOGGER.info(f"✅ Loaded {len(backups)} backups, total: {total_size_mb} MB")
-            
+            # Sort by date (most recent first)
+            all_backups.sort(key=lambda x: x["datetime"], reverse=True)
+
+            # Calculate total size
+            total_size = sum(backup["size_mb"] for backup in all_backups)
+
+            # Get last backup
+            last_backup = all_backups[0] if all_backups else None
+
             return {
-                "backups": backups,
-                "total_backups": len(backups),
+                "backups": all_backups,
+                "total_backups": len(all_backups),
+                "total_size": round(total_size, 2),
                 "last_backup": last_backup,
-                "total_size": total_size,
-                "total_size_mb": total_size_mb,
+                "local_count": len(local_backups),
+                "drive_count": len(drive_backups),
             }
 
         except Exception as err:
             _LOGGER.error(f"Error updating backup data: {err}", exc_info=True)
-            # Non lanciare UpdateFailed, ritorna dati vuoti
+            raise UpdateFailed(f"Error communicating with API: {err}")
+
+    async def _get_backups_from_supervisor(self) -> list[dict[str, Any]]:
+        """Get backups from Home Assistant Supervisor API.
+        
+        Returns:
+            List of backup dictionaries
+        """
+        try:
+            # Use hassio component to communicate with Supervisor
+            response = await hassio.async_send_command(
+                self.hass,
+                "/backups",
+                method="get",
+                timeout=30,
+            )
+
+            if not response or "backups" not in response:
+                _LOGGER.warning("No backups found in Supervisor response")
+                return []
+
+            backups_data = response["backups"]
+            _LOGGER.debug(f"Found {len(backups_data)} local backups")
+
+            # Process each backup
+            backups = []
+            for backup_data in backups_data:
+                backup_info = self._process_backup(backup_data, source=DESTINATION_LOCAL)
+                if backup_info:
+                    backups.append(backup_info)
+
+            return backups
+
+        except Exception as err:
+            _LOGGER.error(f"Error fetching backups from Supervisor: {err}", exc_info=True)
+            return []
+
+    def _process_backup(
+        self, backup_data: dict, source: str = DESTINATION_LOCAL
+    ) -> dict[str, Any] | None:
+        """Process a backup from Supervisor API.
+        
+        Args:
+            backup_data: Raw backup data from API
+            source: Source of backup (local, google_drive, etc)
+            
+        Returns:
+            Processed backup dictionary or None if invalid
+        """
+        try:
+            # Extract basic info
+            name = backup_data.get("name", "Unknown")
+            slug = backup_data.get("slug", "")
+            size_bytes = backup_data.get("size", 0)
+            backup_type = backup_data.get("type", "full")
+            protected = backup_data.get("protected", False)
+            compressed = backup_data.get("compressed", True)
+
+            # Parse date with timezone conversion
+            date_str = backup_data.get("date")
+            if not date_str:
+                _LOGGER.warning(f"Backup {name} has no date")
+                date_obj = dt_util.now()
+            else:
+                # Parse ISO format date (from Supervisor API)
+                # Remove 'Z' and add explicit UTC timezone
+                date_str_clean = date_str.replace("Z", "+00:00")
+                
+                try:
+                    # Parse as UTC
+                    date_obj_utc = datetime.fromisoformat(date_str_clean)
+                    # Convert to local timezone
+                    date_obj = dt_util.as_local(date_obj_utc)
+                except ValueError as err:
+                    _LOGGER.warning(f"Could not parse date {date_str}: {err}")
+                    date_obj = dt_util.now()
+
+            # Calculate size in MB
+            size_mb = round(size_bytes / (1024 * 1024), 2)
+
+            # Get SHA256 hash for identification (if available)
+            backup_hash = backup_data.get("content", {}).get("homeassistant", "")
+            if not backup_hash:
+                backup_hash = slug  # Fallback to slug
+
+            # Get destination friendly name
+            destination_name = DESTINATION_NAMES.get(source, source)
+
             return {
-                "backups": [],
-                "total_backups": 0,
-                "last_backup": None,
-                "total_size": 0,
-                "total_size_mb": 0,
+                "name": name,
+                "slug": slug,
+                "size": size_bytes,
+                "size_mb": size_mb,
+                "date": date_obj.strftime("%Y-%m-%d"),
+                "time": date_obj.strftime("%H:%M:%S"),
+                "datetime": date_obj,
+                "hash": backup_hash,
+                "type": backup_type,
+                "protected": protected,
+                "compressed": compressed,
+                "destination": source,
+                "destination_name": destination_name,
             }
+
+        except Exception as err:
+            _LOGGER.error(f"Error processing backup: {err}", exc_info=True)
+            return None
+
+    async def async_refresh_google_drive_token(self) -> bool:
+        """Refresh Google Drive OAuth token if needed.
+        
+        Returns:
+            True if refresh successful or not needed, False otherwise
+        """
+        if not self._google_drive_client:
+            return True  # Not using Drive, so "success"
+
+        try:
+            new_token = await self._google_drive_client.async_refresh_token()
+            
+            if new_token:
+                _LOGGER.info("Google Drive token refreshed successfully")
+                # Update config entry with new token
+                # This should be handled by config flow, but we log it here
+                return True
+            
+            return False
+
+        except Exception as err:
+            _LOGGER.error(f"Error refreshing Google Drive token: {err}", exc_info=True)
+            return False
