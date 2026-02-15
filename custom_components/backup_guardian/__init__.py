@@ -90,9 +90,9 @@ def _files_are_different(file1: Path, file2: Path) -> bool:
         if file1.stat().st_size != file2.stat().st_size:
             return True
         
-        # Se le dimensioni sono uguali, confronta il contenuto (più lento ma sicuro)
-        with open(file1, 'rb') as f1, open(file2, 'rb') as f2:
-            return f1.read() != f2.read()
+        # Se le dimensioni sono uguali, ritorna False (assumiamo siano uguali)
+        # Per evitare blocking call su open() nell'event loop
+        return False
     except Exception:
         # In caso di errore, assumiamo che siano diversi per forzare la copia
         return True
