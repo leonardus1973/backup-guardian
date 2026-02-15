@@ -1,333 +1,297 @@
-# 📥 Guida Completa all'Installazione - Backup Guardian
+# 📦 Guida Installazione Completa - Backup Guardian v1.1.0
 
-## Indice
-1. [Prerequisiti](#prerequisiti)
-2. [Metodo 1: Installazione via HACS (Consigliato)](#metodo-1-installazione-via-hacs)
-3. [Metodo 2: Installazione Manuale](#metodo-2-installazione-manuale)
-4. [Configurazione dell'Integrazione](#configurazione-dellintegrazione)
-5. [Configurazione della Lovelace Card](#configurazione-della-lovelace-card)
-6. [Verifica Installazione](#verifica-installazione)
-7. [Risoluzione Problemi](#risoluzione-problemi)
+Questa guida ti accompagna passo-passo nell'installazione di Backup Guardian.
 
----
+## 📋 Prerequisiti
 
-## Prerequisiti
+Prima di iniziare, verifica di avere:
 
-### Requisiti Minimi
+- ✅ **Home Assistant OS** 2023.1.0 o superiore
+- ✅ Oppure **Home Assistant Supervised** 2023.1.0 o superiore
+- ✅ Accesso come amministratore
+- ✅ Almeno un backup presente nel sistema
 
-- ✅ Home Assistant versione **2023.1.0** o superiore
-- ✅ Accesso SSH o File Editor (per installazione manuale)
-- ✅ HACS installato (per installazione via HACS)
-- ✅ Backup presenti nella directory `/backup` di Home Assistant
-
-### Verifica Versione Home Assistant
-
-1. Vai su **Impostazioni** → **Info**
-2. Controlla che la versione sia almeno **2023.1.0**
+⚠️ **Non compatibile** con:
+- ❌ Home Assistant Container (Docker standalone)
+- ❌ Home Assistant Core (installazione Python)
 
 ---
 
-## Metodo 1: Installazione via HACS
+## 🎯 Metodo 1: Installazione via HACS (Consigliato)
 
-### Passo 1: Aggiungi il Repository
+### Passo 1: Aggiungi Repository Personalizzato
 
 1. Apri **HACS** nel menu laterale di Home Assistant
 2. Clicca su **Integrazioni**
 3. Clicca sui **tre puntini** in alto a destra
 4. Seleziona **Repository personalizzati**
-5. Nel campo **Repository** inserisci:
-   ```
-   https://github.com/leonardus1973/backup-guardian
-   ```
-6. Seleziona **Categoria**: `Integration`
-7. Clicca su **Aggiungi**
+5. Nella finestra che si apre:
+   - **Repository**: `https://github.com/leonardus1973/backup-guardian`
+   - **Categoria**: `Integration`
+6. Clicca **Aggiungi**
 
 ### Passo 2: Installa l'Integrazione
 
-1. In HACS → Integrazioni, cerca **"Backup Guardian"**
-2. Clicca sull'integrazione
-3. Clicca su **Scarica**
-4. Seleziona l'ultima versione disponibile
-5. Clicca su **Scarica** per confermare
+1. Nella sezione **Integrazioni** di HACS
+2. Cerca "**Backup Guardian**"
+3. Clicca sulla card dell'integrazione
+4. Clicca **Scarica** (o **Download**)
+5. Nella finestra di conferma, clicca **Scarica**
+6. Aspetta il completamento del download
 
 ### Passo 3: Riavvia Home Assistant
 
 1. Vai su **Impostazioni** → **Sistema** → **Riavvia**
-2. Conferma il riavvio
-3. Attendi il completamento (circa 1-2 minuti)
+2. Clicca **Riavvia**
+3. Aspetta che Home Assistant si riavvii completamente (~2 minuti)
+
+✅ **Durante il riavvio, l'integrazione copia automaticamente il file JavaScript della card in `/config/www/community/backup_guardian/`!**
+
+### Passo 4: Configura l'Integrazione
+
+1. Vai su **Impostazioni** → **Dispositivi e Servizi**
+2. Clicca **+ Aggiungi Integrazione**
+3. Nella barra di ricerca, digita "**Backup Guardian**"
+4. Clicca sull'integrazione quando appare
+5. Nella finestra di configurazione, clicca **Invia**
+6. Vedrai il messaggio "Integrazione aggiunta con successo"
+
+✅ **I 3 sensori vengono creati automaticamente!**
+
+### Passo 5: Verifica i Sensori
+
+1. Vai su **Strumenti per sviluppatori** → **Stati**
+2. Nella barra di ricerca, digita `backup_guardian`
+3. Dovresti vedere 3 sensori:
+   - `sensor.backup_guardian_ultimo_backup`
+   - `sensor.backup_guardian_totale_backup`
+   - `sensor.backup_guardian_dimensione_totale`
+4. Clicca su `sensor.backup_guardian_ultimo_backup`
+5. Verifica che abbia valori e attributi corretti
 
 ---
 
-## Metodo 2: Installazione Manuale
+## 🎨 Metodo 2: Installazione Manuale
 
 ### Passo 1: Scarica i File
 
-**Opzione A - Via Git:**
-```bash
-cd /config
-git clone https://github.com/leonardus1973/backup-guardian.git
-```
+1. Vai su https://github.com/leonardus1973/backup-guardian/releases
+2. Scarica l'ultima versione (v1.1.0 o superiore)
+3. Clicca su `Source code (zip)`
 
-**Opzione B - Download Manuale:**
-1. Vai su https://github.com/leonardus1973/backup-guardian
-2. Clicca su **Code** → **Download ZIP**
-3. Estrai il file ZIP
+### Passo 2: Estrai e Copia i File
 
-### Passo 2: Copia i File
-
-1. Copia la cartella `custom_components/backup_guardian`
-2. Incollala in `/config/custom_components/`
-3. La struttura finale deve essere:
+1. Estrai il file ZIP scaricato
+2. All'interno troverai la cartella `custom_components/backup_guardian`
+3. Copia l'intera cartella `backup_guardian` in `/config/custom_components/`
+4. La struttura finale deve essere:
    ```
-   /config/
-   └── custom_components/
-       └── backup_guardian/
-           ├── __init__.py
-           ├── config_flow.py
-           ├── const.py
-           ├── coordinator.py
-           ├── sensor.py
-           ├── manifest.json
-           ├── strings.json
-           ├── translations/
-           │   └── it.json
-           └── www/
-               └── backup-guardian-card.js
+   /config/custom_components/backup_guardian/
+   ├── __init__.py
+   ├── config_flow.py
+   ├── const.py
+   ├── coordinator.py
+   ├── manifest.json
+   ├── sensor.py
+   ├── strings.json
+   ├── translations/
+   │   └── it.json
+   └── www/
+       └── backup-guardian-card.js
    ```
 
-### Passo 3: Verifica Permessi
+### Passo 3: Riavvia Home Assistant
 
-Se usi Home Assistant OS o Supervised, i permessi sono gestiti automaticamente.
+Segui il **Passo 3** del Metodo 1 (riavvio).
 
-Per installazioni Core:
-```bash
-cd /config/custom_components
-chown -R homeassistant:homeassistant backup_guardian
-```
+✅ **Durante il riavvio, l'integrazione copia automaticamente il file JavaScript!**
 
-### Passo 4: Riavvia Home Assistant
+### Passo 4-5: Configura e Verifica
 
-```bash
-# Via SSH
-ha core restart
-
-# Oppure dall'UI
-# Impostazioni → Sistema → Riavvia
-```
+Segui i **Passi 4 e 5** del Metodo 1.
 
 ---
 
-## Configurazione dell'Integrazione
+## 🎨 Configurazione Lovelace Card
 
-### Passo 1: Aggiungi l'Integrazione
+### Passo 1: Verifica File JavaScript
 
-1. Vai su **Impostazioni** → **Dispositivi e Servizi**
-2. Clicca sul pulsante **+ Aggiungi Integrazione** (in basso a destra)
-3. Cerca **"Backup Guardian"**
-4. Clicca sull'integrazione quando appare
-5. Clicca su **Invia** per completare la configurazione
+Prima di procedere, verifica che il file sia stato copiato:
 
-### Passo 2: Verifica i Sensori
+1. Con **File Editor** o **SSH**, controlla che esista:
+   ```
+   /config/www/community/backup_guardian/backup-guardian-card.js
+   ```
 
-1. Vai su **Strumenti per sviluppatori** → **Stati**
-2. Cerca i sensori:
-   - `sensor.ultimo_backup`
-   - `sensor.totale_backup`
-   - `sensor.dimensione_totale_backup`
+Se **non esiste**:
+- Riavvia Home Assistant di nuovo
+- L'integrazione lo copia automaticamente al primo avvio
 
-Se vedi i sensori, l'integrazione è installata correttamente! ✅
-
----
-
-## Configurazione della Lovelace Card
-
-### Passo 1: Registra la Risorsa JavaScript
-
-#### Metodo UI (Consigliato)
+### Passo 2: Registra la Risorsa
 
 1. Vai su **Impostazioni** → **Dashboard** → **Risorse**
-2. Clicca su **+ Aggiungi risorsa**
-3. Inserisci i seguenti dati:
+2. Clicca **+ Aggiungi risorsa**
+3. Compila i campi:
    - **URL**: `/local/community/backup_guardian/backup-guardian-card.js`
    - **Tipo di risorsa**: **Modulo JavaScript**
-4. Clicca su **Crea**
+4. Clicca **Crea**
 
-#### Metodo YAML
+### Passo 3: Svuota Cache Browser
 
-Aggiungi al file `configuration.yaml`:
+**⚠️ MOLTO IMPORTANTE!**
 
-```yaml
-lovelace:
-  mode: yaml
-  resources:
-    - url: /local/community/backup_guardian/backup-guardian-card.js
-      type: module
-```
+La cache del browser può impedire il caricamento della card.
 
-Poi riavvia Home Assistant.
+**Windows/Linux:**
+- Ctrl + Shift + R (hard refresh)
+- Oppure Ctrl + F5
 
-### Passo 2: Aggiungi la Card alla Dashboard
+**Mac:**
+- Cmd + Shift + R
 
-#### Metodo UI
+**Se ancora non funziona:**
+1. Vai su `edge://settings/clearBrowserData` (o equivalente per il tuo browser)
+2. Seleziona **"Immagini e file memorizzati nella cache"**
+3. Clicca **Cancella dati**
+4. **Chiudi completamente il browser**
+5. Riapri il browser
+
+### Passo 4: Aggiungi la Card alla Dashboard
 
 1. Apri una dashboard
-2. Clicca sui **tre puntini** in alto a destra → **Modifica dashboard**
-3. Clicca su **+ Aggiungi Card**
-4. Scorri in basso fino a trovare **Personalizzata: Backup Guardian Card**
-5. Clicca sulla card
-6. Nella configurazione, inserisci:
-   ```yaml
-   type: custom:backup-guardian-card
-   entity: sensor.totale_backup
-   last_backup_entity: sensor.ultimo_backup
-   ```
-7. Clicca su **Salva**
-
-#### Metodo YAML
-
-Aggiungi alla tua dashboard:
+2. Clicca sui **tre puntini** in alto a destra
+3. Seleziona **Modifica dashboard**
+4. Clicca **+ Aggiungi Card**
+5. Scorri in basso e seleziona **Manuale**
+6. Incolla questa configurazione:
 
 ```yaml
 type: custom:backup-guardian-card
-entity: sensor.totale_backup
-last_backup_entity: sensor.ultimo_backup
+entity: sensor.backup_guardian_totale_backup
+last_backup_entity: sensor.backup_guardian_ultimo_backup
+size_entity: sensor.backup_guardian_dimensione_totale
 ```
 
-### Passo 3: Svuota la Cache del Browser
+7. Clicca **Salva**
+8. Clicca **Fine** per uscire dalla modalità modifica
 
-Importante per vedere le modifiche!
+### Passo 5: Verifica la Card
 
-- **Chrome/Edge**: `Ctrl + Shift + R` (Windows) o `Cmd + Shift + R` (Mac)
-- **Firefox**: `Ctrl + F5` (Windows) o `Cmd + Shift + R` (Mac)
-- **Safari**: `Cmd + Option + R`
+Dovresti vedere:
 
----
+- ✅ Header "🛡️ Backup Guardian"
+- ✅ Sezione "📦 Ultimo Backup" con badge **[HOME ASSISTANT LOCALE]**
+- ✅ Due box statistiche con numero backup e MB totali
+- ✅ Bottone "Mostra Tutti i Backup"
+- ✅ Lista espandibile con badge per ogni backup
 
-## Verifica Installazione
-
-### Checklist Completa
-
-- [ ] L'integrazione appare in **Dispositivi e Servizi**
-- [ ] I 3 sensori sono visibili in **Strumenti per sviluppatori** → **Stati**
-- [ ] La risorsa JavaScript è registrata in **Dashboard** → **Risorse**
-- [ ] La card appare nella dashboard e mostra i dati
-- [ ] Nessun errore nei log di Home Assistant
-
-### Verifica Log
-
-1. Vai su **Impostazioni** → **Sistema** → **Log**
-2. Cerca eventuali errori relativi a `backup_guardian`
-3. Se tutto OK, non dovrebbero esserci errori
+Se **non vedi** la card:
+1. Apri **Console** del browser (F12)
+2. Cerca il messaggio `✅ Backup Guardian Card loaded successfully!`
+3. Se non c'è, il file non si sta caricando → Svuota di nuovo la cache
 
 ---
 
-## Risoluzione Problemi
+## ✅ Verifica Installazione Completa
 
-### La card non appare nella lista
+### Checklist Finale
+
+- [ ] Integrazione presente in **Dispositivi e Servizi**
+- [ ] 3 sensori attivi con valori corretti
+- [ ] File JavaScript esiste in `/config/www/community/backup_guardian/`
+- [ ] Risorsa registrata in **Dashboard** → **Risorse**
+- [ ] Cache browser svuotata
+- [ ] Card visibile nella dashboard
+- [ ] Badge destinazione visibili
+- [ ] Orari corretti (timezone locale)
+- [ ] Console mostra messaggio di caricamento card
+
+Se tutti i punti sono ✅, l'installazione è **completata con successo**! 🎉
+
+---
+
+## 🐛 Risoluzione Problemi Comuni
+
+### Problema: Sensori non creati o vuoti
 
 **Soluzione:**
-1. Verifica che la risorsa JavaScript sia registrata
-2. Svuota la cache del browser (Ctrl + F5)
-3. Riavvia Home Assistant
-4. Controlla che il file `backup-guardian-card.js` esista in:
-   `/config/www/community/backup_guardian/`
+1. Verifica di essere su **HA OS** o **Supervised**
+2. Controlla log: **Impostazioni** → **Sistema** → **Log**
+3. Cerca errori con `backup_guardian`
+4. Se vedi errori di permessi, verifica che ci sia almeno un backup nel sistema
+5. Riavvia l'integrazione: **Dispositivi e Servizi** → Backup Guardian → **Tre puntini** → **Ricarica**
 
-### I sensori non vengono creati
+### Problema: File JavaScript non copiato
 
 **Soluzione:**
-1. Verifica che l'integrazione sia aggiunta in **Dispositivi e Servizi**
-2. Controlla i log per errori
-3. Verifica che la directory `/backup` esista e contenga file `.tar`
+1. Verifica log per messaggi di copia file
+2. Se vedi errori, copia manualmente:
+   - Da: `/config/custom_components/backup_guardian/www/backup-guardian-card.js`
+   - A: `/config/www/community/backup_guardian/backup-guardian-card.js`
+3. Crea la directory se non esiste
 4. Riavvia Home Assistant
 
-### La card mostra "Nessun backup trovato"
+### Problema: Card mostra "Custom element doesn't exist"
 
 **Soluzione:**
-1. Verifica che ci siano backup in `/backup`
-2. I backup devono avere estensione `.tar`
-3. Controlla i permessi della directory `/backup`
-4. Attendi 5 minuti (tempo di aggiornamento dei sensori)
-
-### Errore "Entity not found"
-
-**Soluzione:**
-1. Verifica che i nomi dei sensori siano corretti:
-   - `sensor.ultimo_backup`
-   - `sensor.totale_backup`
-2. Se hai rinominato i sensori, aggiorna la configurazione della card
-3. Riavvia Home Assistant
-
-### La card non si aggiorna
-
-**Soluzione:**
-1. I sensori si aggiornano ogni 5 minuti
-2. Puoi forzare l'aggiornamento ricaricando la dashboard
-3. Verifica la connessione con Home Assistant
-4. Controlla che non ci siano errori nei log
-
-### Problemi dopo l'aggiornamento
-
-**Soluzione:**
-1. Svuota completamente la cache del browser
-2. Riavvia Home Assistant
-3. Rimuovi e ri-aggiungi la risorsa JavaScript
-4. Se il problema persiste, reinstalla l'integrazione
-
----
-
-## Aggiornamento dell'Integrazione
-
-### Via HACS
-
-1. Apri HACS → Integrazioni
-2. Cerca "Backup Guardian"
-3. Se disponibile un aggiornamento, vedrai un pulsante **Aggiorna**
-4. Clicca su **Aggiorna**
+1. Verifica che il file esista in `/config/www/community/backup_guardian/backup-guardian-card.js`
+2. Verifica che l'URL risorsa sia esatto: `/local/community/backup_guardian/backup-guardian-card.js`
+3. **Svuota cache browser completamente** (vedi Passo 3 sopra)
+4. Prova in **modalità incognito** per escludere problemi di cache
 5. Riavvia Home Assistant
 
-### Manuale
+### Problema: Badge destinazione non appaiono
 
-1. Scarica l'ultima versione da GitHub
-2. Sostituisci la cartella `custom_components/backup_guardian`
-3. Riavvia Home Assistant
-4. Svuota la cache del browser
+**Soluzione:**
+1. Verifica versione: deve essere **v1.1.0** o superiore
+2. Svuota cache browser completamente
+3. Verifica attributo nei sensori:
+   - **Strumenti per sviluppatori** → **Stati**
+   - `sensor.backup_guardian_ultimo_backup`
+   - Deve esserci `backup_destination: Home Assistant Locale`
+4. Se manca l'attributo, reinstalla l'integrazione
+
+### Problema: Orari sbagliati (-1 ora)
+
+**Soluzione:**
+Questo bug è stato risolto nella v1.1.0. Se hai ancora il problema:
+1. Aggiorna alla v1.1.0 o superiore
+2. Verifica timezone HA: **Impostazioni** → **Sistema** → **Generale**
+3. Ricarica integrazione
 
 ---
 
-## Disinstallazione
+## 📝 Abilitare Log di Debug
 
-### Rimuovi l'Integrazione
+Se hai problemi persistenti, abilita i log dettagliati:
 
-1. Vai su **Impostazioni** → **Dispositivi e Servizi**
-2. Trova "Backup Guardian"
-3. Clicca sui **tre puntini** → **Elimina**
-4. Conferma l'eliminazione
+1. Modifica `configuration.yaml`:
 
-### Rimuovi i File (Opzionale)
-
-```bash
-rm -rf /config/custom_components/backup_guardian
-rm -rf /config/www/community/backup_guardian
+```yaml
+logger:
+  default: info
+  logs:
+    custom_components.backup_guardian: debug
 ```
 
-### Rimuovi la Risorsa JavaScript
-
-1. Vai su **Impostazioni** → **Dashboard** → **Risorse**
-2. Trova la risorsa `backup-guardian-card.js`
-3. Clicca sull'icona del cestino per eliminarla
-
-### Riavvia Home Assistant
+2. Riavvia Home Assistant
+3. Vai su **Impostazioni** → **Sistema** → **Log**
+4. Cerca messaggi di `backup_guardian`
+5. Riporta gli errori aprendo un [Issue su GitHub](https://github.com/leonardus1973/backup-guardian/issues)
 
 ---
 
-## Supporto
+## 🎓 Passi Successivi
 
-Se hai ancora problemi:
+Dopo l'installazione:
 
-1. 📝 Controlla i [Issues su GitHub](https://github.com/leonardus1973/backup-guardian/issues)
-2. 🆕 Apri un nuovo Issue se il tuo problema non è già segnalato
-3. 💬 Partecipa alle [Discussions](https://github.com/leonardus1973/backup-guardian/discussions)
+1. 📖 Leggi il [README](https://github.com/leonardus1973/backup-guardian) per funzionalità avanzate
+2. 🤖 Configura [automazioni](ESEMPI_CONFIGURAZIONE.md) per notifiche backup
+3. ⭐ Lascia una stella su GitHub se il progetto ti è utile
+4. 🐛 Segnala bug o suggerisci funzionalità tramite [Issues](https://github.com/leonardus1973/backup-guardian/issues)
 
 ---
 
-**Buona installazione! 🚀**
+**Installazione completata! Buon monitoraggio! 🛡️**
+
+**Backup Guardian v1.1.0** - Prima versione stabile e completa
