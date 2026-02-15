@@ -1,21 +1,24 @@
 # 🛡️ Backup Guardian - Custom Integration per Home Assistant
 
-**Backup Guardian** è una custom integration per Home Assistant OS che monitora i backup del Supervisor, mostrando informazioni dettagliate come nome, data, ora, dimensione e hash SHA256 di verifica.
+**Backup Guardian** è una custom integration per Home Assistant OS che monitora i backup del Supervisor, mostrando informazioni dettagliate come nome, data, ora, dimensione, destinazione e hash SHA256 di verifica.
 
-![Version](https://img.shields.io/github/v/release/leonardus1973/backup-guardian)
-![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2023.1+-blue)
-![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-green.svg)
-
+[![Version](https://img.shields.io/github/v/release/leonardus1973/backup-guardian)](https://github.com/leonardus1973/backup-guardian/releases)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2023.1+-blue)](https://www.home-assistant.io)
+[![License](https://img.shields.io/github/license/leonardus1973/backup-guardian)](LICENSE)
+[![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 
 ## ✨ Caratteristiche
 
 - 📊 **Monitoraggio completo** dei backup tramite Supervisor API
 - 🔍 **Hash SHA256** per identificazione univoca di ogni backup
+- 📍 **Destinazione Backup**: Visualizza dove è salvato ogni backup (Locale, Google Drive, ecc.)
 - 📈 **3 Sensori dedicati**:
   - Ultimo backup effettuato
   - Totale backup disponibili
   - Dimensione totale occupata
-- 🎨 **Lovelace Card personalizzata** con interfaccia moderna e intuitiva
+- 🎨 **Lovelace Card personalizzata** con badge destinazione e interfaccia moderna
+- 🔄 **Installazione Zero-Config**: File card copiato automaticamente
+- ⏰ **Orari Corretti**: Fuso orario locale gestito automaticamente
 - 🔄 **Aggiornamento automatico** ogni 5 minuti
 - 🚀 **Compatibile con HACS**
 - 🌍 **Interfaccia in italiano**
@@ -23,10 +26,19 @@
 ## 📸 Screenshot
 
 La card mostra:
-- 📦 Ultimo backup con tutti i dettagli (nome, data, ora, dimensione, hash)
-- 📊 Statistiche: totale backup e spazio occupato
-- 🔘 Lista espandibile di tutti i backup
-- 🎨 Design moderno che si integra con il tema di Home Assistant
+
+- 📦 **Ultimo backup** con tutti i dettagli (nome, data, ora, dimensione, hash)
+- 🏷️ **Badge destinazione** colorato (es. "HOME ASSISTANT LOCALE")
+- 📊 **Statistiche**: totale backup e spazio occupato
+- 🔘 **Lista espandibile** di tutti i backup con badge per ciascuno
+- 🎨 **Design moderno** che si integra con il tema di Home Assistant
+
+## 🆕 Novità v1.1.0
+
+- ✅ **Copia automatica** del file JavaScript della card (zero configurazione manuale!)
+- ✅ **Badge destinazione** per ogni backup
+- ✅ **Fix timezone**: orari sempre corretti
+- ✅ **Struttura pronta** per integrazioni future (Google Drive, Dropbox, OneDrive)
 
 ## 📦 Installazione
 
@@ -40,6 +52,8 @@ La card mostra:
 6. Cerca "Backup Guardian" e clicca su **Scarica**
 7. **Riavvia Home Assistant**
 
+✅ Il file della card viene copiato automaticamente in `/config/www/community/backup_guardian/`!
+
 ### Metodo 2: Installazione Manuale
 
 1. Scarica l'ultima release da [GitHub Releases](https://github.com/leonardus1973/backup-guardian/releases)
@@ -47,6 +61,8 @@ La card mostra:
 3. Copia la cartella `custom_components/backup_guardian` nella directory `config/custom_components/` di Home Assistant
 4. La struttura deve essere: `config/custom_components/backup_guardian/`
 5. **Riavvia Home Assistant**
+
+✅ Il file della card viene copiato automaticamente al primo avvio dell'integrazione!
 
 ## ⚙️ Configurazione
 
@@ -58,28 +74,24 @@ La card mostra:
 4. Clicca sull'integrazione quando appare
 5. Clicca su **Invia** per completare la configurazione
 
-✅ L'integrazione è ora attiva! I sensori verranno creati automaticamente.
+✅ L'integrazione è ora attiva! I sensori vengono creati automaticamente.
+
+✅ Il file JavaScript della card viene copiato automaticamente in `/config/www/community/backup_guardian/`
 
 ### Passo 2: Configura la Lovelace Card
 
 #### A. Registra la Risorsa JavaScript
 
-**L'integrazione copia automaticamente** il file JavaScript al primo avvio.
+**Il file viene copiato automaticamente dall'integrazione**, devi solo registrarlo!
 
 1. Vai su **Impostazioni** → **Dashboard** → **Risorse**
 2. Clicca su **+ Aggiungi risorsa**
 3. Inserisci:
    - **URL**: `/local/community/backup_guardian/backup-guardian-card.js`
-   - **Tipo**: **Modulo JavaScript**
-4. **Crea**
-5. **Svuota cache browser**: Ctrl+Shift+R
-
-**Nota**: Il file viene copiato automaticamente in `/config/www/community/backup_guardian/` al primo avvio dell'integrazione.
-
+   - **Tipo di risorsa**: **Modulo JavaScript**
 4. Clicca **Crea**
 
 **IMPORTANTE**: Dopo aver aggiunto la risorsa:
-- **Riavvia Home Assistant** (consigliato)
 - **Svuota la cache del browser**: Ctrl+Shift+R (Windows/Linux) o Cmd+Shift+R (Mac)
 - Se la card non appare, prova a usare una **finestra in incognito** per verificare che il problema sia la cache
 
@@ -100,47 +112,51 @@ size_entity: sensor.backup_guardian_dimensione_totale
 5. Clicca **Salva**
 6. Clicca **Fine** per uscire dalla modalità modifica
 
-✅ La card dovrebbe ora essere visibile!
+✅ La card dovrebbe ora essere visibile con i badge destinazione!
 
 ## 📊 Sensori Disponibili
 
 L'integrazione crea automaticamente **3 sensori** sotto il dispositivo "Backup Guardian":
 
 ### 1. `sensor.backup_guardian_ultimo_backup`
-Mostra la data e ora dell'ultimo backup effettuato.
+
+Mostra la data e ora dell'ultimo backup effettuato (con timezone locale corretto).
 
 **Attributi:**
 - `backup_name`: Nome del backup
 - `backup_date`: Data in formato YYYY-MM-DD
-- `backup_time`: Ora in formato HH:MM:SS
+- `backup_time`: Ora in formato HH:MM:SS (timezone locale)
 - `backup_size`: Dimensione in MB
 - `backup_hash`: Hash SHA256 univoco per identificazione
 - `backup_type`: Tipo di backup (full/partial)
+- `backup_destination`: Destinazione backup (es. "Home Assistant Locale")
 
 ### 2. `sensor.backup_guardian_totale_backup`
+
 Indica il numero totale di backup presenti nel sistema.
 
 **Attributi:**
 - `backup_list`: Array con la lista completa di tutti i backup, ognuno con:
   - `name`: Nome del backup
   - `date`: Data
-  - `time`: Ora
+  - `time`: Ora (timezone locale)
   - `size`: Dimensione
   - `hash`: Hash SHA256
+  - `destination`: Destinazione backup
 
 ### 3. `sensor.backup_guardian_dimensione_totale`
+
 Mostra lo spazio totale occupato da tutti i backup in MB.
 
 ## 🎨 Funzionalità della Card
 
 La card personalizzata offre:
 
-- **Sezione Ultimo Backup**: Visualizza i dettagli completi dell'ultimo backup effettuato
-- **Box Statistiche**: Due box affiancati con:
-  - Numero totale di backup
-  - Dimensione totale in MB
+- **Sezione Ultimo Backup**: Visualizza i dettagli completi dell'ultimo backup con badge destinazione
+- **Badge Colorati**: Ogni backup ha un badge che indica la destinazione (es. "HOME ASSISTANT LOCALE")
+- **Box Statistiche**: Due box affiancati con numero totale backup e dimensione totale
 - **Bottone Espandibile**: Clicca su "Mostra Tutti i Backup" per vedere la lista completa
-- **Lista Dettagliata**: Ogni backup mostra nome, data/ora, dimensione e hash
+- **Lista Dettagliata**: Ogni backup mostra nome, data/ora corretta, dimensione, hash e badge destinazione
 - **Design Responsive**: Si adatta automaticamente al tema di Home Assistant
 
 ## 🔧 Configurazione Avanzata
@@ -193,6 +209,7 @@ automation:
           title: "✅ Backup Completato"
           message: >
             Nuovo backup: {{ state_attr('sensor.backup_guardian_ultimo_backup', 'backup_name') }}
+            Destinazione: {{ state_attr('sensor.backup_guardian_ultimo_backup', 'backup_destination') }}
             Dimensione: {{ state_attr('sensor.backup_guardian_ultimo_backup', 'backup_size') }}
 ```
 
@@ -210,30 +227,33 @@ automation:
 
 **Soluzione:**
 1. Verifica che la risorsa JavaScript sia registrata correttamente in **Dashboard** → **Risorse**
-2. Controlla che l'URL sia corretto:
-   - HACS: `/hacsfiles/backup_guardian/backup-guardian-card.js`
-   - Manuale: `/local/community/backup_guardian/backup-guardian-card.js`
-3. **Svuota completamente la cache** del browser:
+2. L'URL deve essere: `/local/community/backup_guardian/backup-guardian-card.js`
+3. Verifica che il file esista in `/config/www/community/backup_guardian/backup-guardian-card.js`
+   - Se non esiste, riavvia HA (l'integrazione lo copia automaticamente)
+4. **Svuota completamente la cache** del browser:
    - **Chrome/Edge**: Ctrl+Shift+Delete → "Immagini e file memorizzati" → Cancella
    - **Firefox**: Ctrl+Shift+Delete → "Cache" → Cancella
-4. **Chiudi e riapri** completamente il browser
-5. Prova in **modalità incognito** per escludere problemi di cache
-6. Se ancora non funziona, riavvia Home Assistant
+5. **Chiudi e riapri** completamente il browser
+6. Prova in **modalità incognito** per escludere problemi di cache
+7. Se ancora non funziona, riavvia Home Assistant
 
-### La card non appare nella lista
+### Il file JavaScript non viene copiato automaticamente
 
 **Soluzione:**
-1. Verifica che il file esista in `/config/www/community/backup_guardian/backup-guardian-card.js`
-2. Se installato via HACS, verifica che HACS abbia copiato il file correttamente
-3. Svuota la cache del browser (Ctrl+Shift+R)
+1. Controlla i log: **Impostazioni** → **Sistema** → **Log**
+2. Cerca messaggi di `backup_guardian` riguardo la copia del file
+3. Se vedi errori, copia manualmente:
+   - Da: `/config/custom_components/backup_guardian/www/backup-guardian-card.js`
+   - A: `/config/www/community/backup_guardian/backup-guardian-card.js`
 4. Riavvia Home Assistant
 
-### Le dimensioni dei backup sono a 0 MB
+### Gli orari dei backup sono sbagliati
 
 **Soluzione:**
-1. Controlla i log per errori nell'accesso all'API del Supervisor
-2. Verifica che ci siano backup effettivi nel sistema
-3. Riavvia l'integrazione: **Dispositivi e Servizi** → Backup Guardian → **Tre puntini** → **Ricarica**
+Nella v1.1.0 questo problema è **risolto**! Se vedi ancora orari sbagliati:
+1. Verifica che il tuo Home Assistant abbia il timezone configurato correttamente
+2. Vai su **Impostazioni** → **Sistema** → **Generale** → Fuso orario
+3. Riavvia l'integrazione: **Dispositivi e Servizi** → Backup Guardian → **Ricarica**
 
 ### Nessun backup trovato
 
@@ -241,6 +261,15 @@ automation:
 1. Verifica che ci siano backup nel sistema: **Impostazioni** → **Sistema** → **Backup**
 2. Controlla i log di Home Assistant per errori
 3. L'integrazione richiede Home Assistant OS o Supervised (non funziona su Container o Core standalone)
+
+### I badge destinazione non appaiono
+
+**Soluzione:**
+1. Verifica che sia installata la **v1.1.0** o superiore
+2. Svuota la cache del browser completamente
+3. Verifica che l'attributo `backup_destination` esista:
+   - **Strumenti per sviluppatori** → **Stati** → `sensor.backup_guardian_ultimo_backup`
+   - Dovrebbe esserci `backup_destination: Home Assistant Locale`
 
 ## 📝 Log e Debug
 
@@ -255,19 +284,6 @@ logger:
 
 Poi riavvia Home Assistant e controlla i log in **Impostazioni** → **Sistema** → **Log**.
 
-### ⚠️ IMPORTANTE: Installazione File JavaScript
-
-HACS potrebbe non copiare automaticamente il file JavaScript. Se la card non appare:
-
-1. Con File Editor, crea la cartella: `/config/www/community/backup_guardian/`
-2. Copia il file da:
-   `/config/custom_components/backup_guardian/www/backup-guardian-card.js`
-   a:
-   `/config/www/community/backup_guardian/backup-guardian-card.js`
-3. Riavvia Home Assistant
-4. Svuota cache browser (Ctrl+Shift+R)
-
-
 ## 🚀 Funzionalità Future
 
 Pianificate per le prossime versioni:
@@ -275,12 +291,15 @@ Pianificate per le prossime versioni:
 - [ ] Supporto backup Google Drive
 - [ ] Supporto backup Dropbox
 - [ ] Supporto backup OneDrive
+- [ ] Supporto NAS (FTP, SMB, NFS)
 - [ ] Notifiche push personalizzate
 - [ ] Grafici storici dei backup
 - [ ] Backup differenziali
 - [ ] Pulizia automatica backup vecchi
-- [ ] Verifica integrità backup
+- [ ] Verifica integrità backup programmata
+- [ ] Ripristino facilitato da interfaccia
 - [ ] Export lista backup in CSV
+- [ ] Compressione ottimizzata
 
 ## 🤝 Contribuire
 
@@ -297,20 +316,26 @@ Contributi, issue e richieste di funzionalità sono benvenuti!
 ### Segnalare Bug
 
 Apri un [Issue](https://github.com/leonardus1973/backup-guardian/issues) con:
+
 - Descrizione del problema
 - Versione di Home Assistant
 - Versione di Backup Guardian
 - Log rilevanti
+- Screenshot (se applicabile)
 
 ## 📄 Licenza
 
-Questo progetto è distribuito con licenza **Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)**. Puoi usarlo, modificarlo e condividerlo liberamente, ma **non è consentito alcun utilizzo commerciale**. Per maggiori dettagli: https://creativecommons.org/licenses/by-nc/4.0/
+Questo progetto è distribuito con licenza **Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)**.
 
-## 📄 License
+Puoi:
+- ✅ Usarlo liberamente
+- ✅ Modificarlo
+- ✅ Condividerlo
 
-This project is licensed under the **Creative Commons Attribution-NonCommercial 4.0 International License**.
-Commercial use is **explicitly forbidden** without prior written permission.
-If you need a commercial license, please contact the author.
+**Non puoi**:
+- ❌ Usarlo per scopi commerciali
+
+Per maggiori dettagli: https://creativecommons.org/licenses/by-nc/4.0/
 
 ## 👤 Autore
 
@@ -321,6 +346,7 @@ If you need a commercial license, please contact the author.
 - Community di Home Assistant
 - HACS (Home Assistant Community Store)
 - Tutti i contributori e tester
+- Claude AI per il supporto nello sviluppo 🤖
 
 ## ⭐ Supporto
 
@@ -329,8 +355,7 @@ Se questo progetto ti è utile, considera di:
 - ⭐ Lasciare una **stella** su GitHub
 - 🐛 Segnalare **bug** o suggerire **funzionalità**
 - 📢 Condividere il progetto con altri utenti di Home Assistant
-
----
+- ☕ Offrire un caffè virtuale all'autore
 
 ## 📋 Requisiti di Sistema
 
@@ -338,16 +363,25 @@ Se questo progetto ti è utile, considera di:
 - **Home Assistant Supervised** 2023.1.0 o superiore
 
 **Nota**: Questa integrazione **richiede** il Supervisor di Home Assistant per funzionare. Non è compatibile con:
-- Home Assistant Container (Docker standalone)
-- Home Assistant Core (installazione Python)
+- ❌ Home Assistant Container (Docker standalone)
+- ❌ Home Assistant Core (installazione Python)
+
+## 🔒 Privacy e Sicurezza
+
+- ✅ Tutti i dati rimangono locali
+- ✅ Nessuna connessione a servizi esterni
+- ✅ Hash SHA256 per verifica integrità
+- ✅ Codice open source verificabile
+- ✅ Zero telemetria o tracking
 
 ---
 
 **Versione corrente**: 1.1.0  
-**Ultimo aggiornamento**: Febbraio 2026
+**Ultimo aggiornamento**: 15 Febbraio 2026  
+**Stato**: ✅ Stabile e Pronto per Produzione
 
 Per supporto, domande o feedback, apri un [Issue su GitHub](https://github.com/leonardus1973/backup-guardian/issues).
 
 ---
 
-**Nota**: Questo è un progetto comunitario non ufficiale e non è affiliato con Home Assistant.
+**Made with ❤️ in Italy** 🇮🇹
