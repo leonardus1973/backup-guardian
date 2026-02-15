@@ -140,13 +140,12 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
             List of backup dictionaries
         """
         try:
-            # Use hassio component to communicate with Supervisor
-            response = await hassio.async_send_command(
-                self.hass,
-                "/backups",
-                method="get",
-                timeout=30,
-            )
+            # Use hassio component to communicate with Supervisor (new API)
+            if not hassio.is_hassio(self.hass):
+                _LOGGER.error("Not running on Home Assistant OS/Supervised")
+                return []
+            
+            response = await hassio.async_get_backups_info(self.hass)
 
             if not response or "backups" not in response:
                 _LOGGER.warning("No backups found in Supervisor response")
