@@ -262,3 +262,4 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
         except Exception as err:
             _LOGGER.error(f"Error refreshing Google Drive token: {err}", exc_info=True)
             return False
+            
