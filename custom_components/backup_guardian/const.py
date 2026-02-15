@@ -55,3 +55,4 @@ BACKUP_FILE_PATTERNS = [
 OAUTH_REDIRECT_URI = "urn:ietf:wg:oauth:2.0:oob"  # For manual code entry
 OAUTH_AUTH_URL = "https://accounts.google.com/o/oauth2/auth"
 OAUTH_TOKEN_URL = "https://oauth2.googleapis.com/token"
+
