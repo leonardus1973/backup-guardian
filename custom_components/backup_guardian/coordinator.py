@@ -134,33 +134,33 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
             raise UpdateFailed(f"Error communicating with API: {err}")
 
     async def _get_backups_from_supervisor(self) -> list[dict[str, Any]]:
-        """Get backups from Home Assistant Supervisor API.
+        """Get backups from Home Assistant.
         
         Returns:
             List of backup dictionaries
         """
         try:
-            # Try to get backups using backup manager (HA 2023.6+)
+            # Method 1: Try BackupManager (HA 2023.6+)
             try:
-                from homeassistant.components.backup import BackupManager
-                backup_manager: BackupManager = self.hass.data.get("backup_manager")
+                backup_manager = self.hass.data.get("backup_manager")
                 
                 if backup_manager:
-                    backups_data = await backup_manager.async_get_backups()
-                    if backups_data:
-                        _LOGGER.debug(f"Found {len(backups_data)} local backups via BackupManager")
+                    _LOGGER.debug("Trying BackupManager...")
+                    backups_dict = await backup_manager.async_get_backups()
+                    
+                    if backups_dict:
+                        _LOGGER.info(f"Found {len(backups_dict)} local backups via BackupManager")
                         
-                        # Process backups from backup manager
                         backups = []
-                        for backup_id, backup_data in backups_data.items():
-                            # Convert backup manager format to our format
+                        for backup_id, backup_obj in backups_dict.items():
+                            # Convert to dict format
                             converted = {
                                 "slug": backup_id,
-                                "name": backup_data.name,
-                                "date": backup_data.date.isoformat(),
-                                "size": backup_data.size,
+                                "name": getattr(backup_obj, 'name', backup_id),
+                                "date": getattr(backup_obj, 'date', datetime.now()).isoformat() if hasattr(getattr(backup_obj, 'date', None), 'isoformat') else str(getattr(backup_obj, 'date', datetime.now())),
+                                "size": getattr(backup_obj, 'size', 0),
                                 "type": "full",
-                                "protected": backup_data.protected,
+                                "protected": getattr(backup_obj, 'protected', False),
                                 "compressed": True,
                             }
                             backup_info = self._process_backup(converted, source=DESTINATION_LOCAL)
@@ -168,54 +168,64 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
                                 backups.append(backup_info)
                         
                         return backups
-            except (ImportError, AttributeError, KeyError) as e:
-                _LOGGER.debug(f"BackupManager not available: {e}, trying hassio API")
-
-            # Fallback: try hassio websocket API
-            try:
-                websocket = self.hass.components.hassio
-                if hasattr(websocket, 'async_get_supervisor_info'):
-                    # Try to call supervisor API directly
-                    import aiohttp
-                    
-                    # Get supervisor token
-                    supervisor_token = self.hass.data.get("hassio_auth", {}).get("token")
-                    if not supervisor_token:
-                        _LOGGER.warning("No supervisor token available")
-                        return []
-                    
-                    url = "http://supervisor/backups"
-                    headers = {
-                        "Authorization": f"Bearer {supervisor_token}",
-                        "Content-Type": "application/json",
-                    }
-                    
-                    timeout = aiohttp.ClientTimeout(total=30)
-                    async with aiohttp.ClientSession(timeout=timeout) as session:
-                        async with session.get(url, headers=headers) as response:
-                            if response.status == 200:
-                                data = await response.json()
-                                backups_data = data.get("data", {}).get("backups", [])
-                                _LOGGER.debug(f"Found {len(backups_data)} local backups via Supervisor API")
-                                
-                                # Process each backup
-                                backups = []
-                                for backup_data in backups_data:
-                                    backup_info = self._process_backup(backup_data, source=DESTINATION_LOCAL)
-                                    if backup_info:
-                                        backups.append(backup_info)
-                                
-                                return backups
-                            else:
-                                _LOGGER.warning(f"Supervisor API returned status {response.status}")
+                else:
+                    _LOGGER.debug("BackupManager not found in hass.data")
+                        
             except Exception as e:
-                _LOGGER.debug(f"Hassio API not available: {e}")
+                _LOGGER.debug(f"BackupManager failed: {e}", exc_info=True)
 
-            _LOGGER.warning("No backup source available")
+            # Method 2: Read from /backup directory
+            try:
+                from pathlib import Path
+                
+                _LOGGER.debug("Trying to read from /backup directory...")
+                backup_dir = Path("/backup")
+                
+                if backup_dir.exists():
+                    _LOGGER.debug(f"/backup directory exists, scanning...")
+                    
+                    backups = []
+                    for tar_file in backup_dir.glob("*.tar"):
+                        try:
+                            stat = await self.hass.async_add_executor_job(tar_file.stat)
+                            
+                            # Extract date from filename or use file mtime
+                            date_obj = datetime.fromtimestamp(stat.st_mtime)
+                            date_obj = dt_util.as_local(date_obj.replace(tzinfo=dt_util.UTC))
+                            
+                            converted = {
+                                "slug": tar_file.stem,
+                                "name": tar_file.stem,
+                                "date": date_obj.isoformat(),
+                                "size": stat.st_size,
+                                "type": "full",
+                                "protected": False,
+                                "compressed": True,
+                            }
+                            
+                            backup_info = self._process_backup(converted, source=DESTINATION_LOCAL)
+                            if backup_info:
+                                backups.append(backup_info)
+                        except Exception as e:
+                            _LOGGER.debug(f"Error processing {tar_file}: {e}")
+                            continue
+                    
+                    if backups:
+                        _LOGGER.info(f"Found {len(backups)} backups in /backup directory")
+                        return backups
+                    else:
+                        _LOGGER.warning("/backup directory is empty or contains no .tar files")
+                else:
+                    _LOGGER.warning("/backup directory does not exist")
+                        
+            except Exception as e:
+                _LOGGER.debug(f"Could not read /backup directory: {e}", exc_info=True)
+
+            _LOGGER.warning("Could not fetch backups from any source")
             return []
 
         except Exception as err:
-            _LOGGER.error(f"Error fetching backups from Supervisor: {err}", exc_info=True)
+            _LOGGER.error(f"Error fetching backups: {err}", exc_info=True)
             return []
 
     def _process_backup(
