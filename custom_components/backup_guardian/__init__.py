@@ -16,16 +16,29 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Backup Guardian from a config entry."""
-    # Copia automaticamente il file JavaScript nella directory www
+    # Copy frontend files automatically
     await _copy_frontend_files(hass)
     
+    # Initialize coordinator
     coordinator = BackupGuardianCoordinator(hass)
+    
+    # Setup Google Drive if enabled
+    google_drive_ok = await coordinator.async_setup_google_drive(entry.data)
+    if not google_drive_ok:
+        _LOGGER.warning(
+            "Google Drive setup failed, continuing with local backups only"
+        )
+    
+    # First refresh to get data
     await coordinator.async_config_entry_first_refresh()
 
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = coordinator
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    # Register update listener for config changes
+    entry.async_on_unload(entry.add_update_listener(async_reload_entry))
 
     return True
 
@@ -38,6 +51,11 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.data[DOMAIN].pop(entry.entry_id)
 
     return unload_ok
+
+
+async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Reload config entry when options change."""
+    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def _copy_frontend_files(hass: HomeAssistant) -> None:
@@ -72,9 +90,9 @@ def _files_are_different(file1: Path, file2: Path) -> bool:
         if file1.stat().st_size != file2.stat().st_size:
             return True
         
-        # Se le dimensioni sono uguali, confronta il contenuto (più lento ma sicuro)
-        with open(file1, 'rb') as f1, open(file2, 'rb') as f2:
-            return f1.read() != f2.read()
+        # Se le dimensioni sono uguali, ritorna False (assumiamo siano uguali)
+        # Per evitare blocking call su open() nell'event loop
+        return False
     except Exception:
         # In caso di errore, assumiamo che siano diversi per forzare la copia
         return True

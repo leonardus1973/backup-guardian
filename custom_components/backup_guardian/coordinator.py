@@ -3,13 +3,23 @@ import hashlib
 import logging
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
+from typing import Any
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.helpers import hassio
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN, UPDATE_INTERVAL
+from .const import (
+    DOMAIN, 
+    UPDATE_INTERVAL,
+    CONF_GOOGLE_DRIVE_ENABLED,
+    CONF_GOOGLE_CLIENT_ID,
+    CONF_GOOGLE_CLIENT_SECRET,
+    CONF_GOOGLE_FOLDER_ID,
+    CONF_GOOGLE_TOKEN,
+)
+from .google_drive import GoogleDriveClient
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -25,6 +35,45 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
             name=DOMAIN,
             update_interval=timedelta(seconds=UPDATE_INTERVAL),
         )
+        self._google_drive_client: GoogleDriveClient | None = None
+        self._google_drive_enabled = False
+
+    async def async_setup_google_drive(self, config_data: dict) -> bool:
+        """Setup Google Drive client if enabled."""
+        self._google_drive_enabled = config_data.get(CONF_GOOGLE_DRIVE_ENABLED, False)
+        
+        if not self._google_drive_enabled:
+            _LOGGER.info("Google Drive integration disabled")
+            self._google_drive_client = None
+            return True
+
+        try:
+            credentials = {
+                "client_id": config_data.get(CONF_GOOGLE_CLIENT_ID),
+                "client_secret": config_data.get(CONF_GOOGLE_CLIENT_SECRET),
+                "folder_id": config_data.get(CONF_GOOGLE_FOLDER_ID, "root"),
+                "token": config_data.get(CONF_GOOGLE_TOKEN, {}).get("access_token"),
+                "refresh_token": config_data.get(CONF_GOOGLE_TOKEN, {}).get("refresh_token"),
+            }
+
+            if not all([credentials["client_id"], credentials["client_secret"], credentials["token"]]):
+                _LOGGER.error("Missing Google Drive credentials")
+                return False
+
+            self._google_drive_client = GoogleDriveClient(self.hass, credentials)
+            
+            if not await self._google_drive_client.async_setup():
+                _LOGGER.error("Failed to setup Google Drive client")
+                self._google_drive_client = None
+                return False
+
+            _LOGGER.info("Google Drive integration enabled successfully")
+            return True
+
+        except Exception as err:
+            _LOGGER.error(f"Error setting up Google Drive: {err}", exc_info=True)
+            self._google_drive_client = None
+            return False
 
     async def _get_backups_from_supervisor(self) -> list:
         """Get backups using Supervisor via hassio component."""
@@ -188,20 +237,10 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
             return None
 
     async def _async_update_data(self) -> dict:
-        """Fetch data from Supervisor API."""
+        """Fetch data from Supervisor API and Google Drive."""
         try:
             # Ottieni i backup dal Supervisor (locale)
             backups_raw = await self._get_backups_from_supervisor()
-            
-            if not backups_raw:
-                _LOGGER.info("No backups found")
-                return {
-                    "backups": [],
-                    "total_backups": 0,
-                    "last_backup": None,
-                    "total_size": 0,
-                    "total_size_mb": 0,
-                }
             
             # Processa ogni backup locale
             backups = []
@@ -210,22 +249,33 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
                 if backup_info:
                     backups.append(backup_info)
             
-            # TODO: In futuro qui aggiungeremo:
-            # - Backup da Google Drive
-            # - Backup da Dropbox
-            # - Backup da OneDrive
-            # Esempio:
-            # google_backups = await self._get_backups_from_google_drive()
-            # for backup in google_backups:
-            #     backups.append(self._process_backup(backup, source="google_drive"))
+            # Ottieni backup da Google Drive se abilitato
+            if self._google_drive_enabled and self._google_drive_client:
+                try:
+                    _LOGGER.debug("Fetching backups from Google Drive...")
+                    drive_backups = await self._google_drive_client.async_get_backups()
+                    
+                    if drive_backups:
+                        _LOGGER.info(f"Found {len(drive_backups)} backups on Google Drive")
+                        # I backup da Google Drive sono già processati
+                        backups.extend(drive_backups)
+                    else:
+                        _LOGGER.debug("No backups found on Google Drive")
+                        
+                except Exception as drive_err:
+                    _LOGGER.error(f"Error fetching Google Drive backups: {drive_err}", exc_info=True)
+                    # Non bloccare l'update per errori Google Drive
             
             if not backups:
+                _LOGGER.info("No backups found from any source")
                 return {
                     "backups": [],
                     "total_backups": 0,
                     "last_backup": None,
                     "total_size": 0,
                     "total_size_mb": 0,
+                    "local_count": 0,
+                    "drive_count": 0,
                 }
             
             # Ordina per data (più recente prima)
@@ -238,7 +288,11 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
             # Ultimo backup
             last_backup = backups[0]
             
-            _LOGGER.info(f"✅ Loaded {len(backups)} backups, total: {total_size_mb} MB")
+            # Conta backup per sorgente
+            local_count = sum(1 for b in backups if b["destination"] == "local")
+            drive_count = sum(1 for b in backups if b["destination"] == "google_drive")
+            
+            _LOGGER.info(f"✅ Loaded {len(backups)} backups total ({local_count} local, {drive_count} Google Drive), total: {total_size_mb} MB")
             
             return {
                 "backups": backups,
@@ -246,6 +300,8 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
                 "last_backup": last_backup,
                 "total_size": total_size,
                 "total_size_mb": total_size_mb,
+                "local_count": local_count,
+                "drive_count": drive_count,
             }
 
         except Exception as err:
@@ -257,4 +313,6 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
                 "last_backup": None,
                 "total_size": 0,
                 "total_size_mb": 0,
+                "local_count": 0,
+                "drive_count": 0,
             }

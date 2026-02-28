@@ -2,26 +2,68 @@
   "config": {
     "step": {
       "user": {
-        "title": "Configura Backup Guardian",
-        "description": "Backup Guardian monitorerà automaticamente i backup di Home Assistant nella directory /backup.",
+        "title": "Backup Guardian Setup",
+        "description": "Configure Backup Guardian to monitor your Home Assistant backups.\n\nNo configuration needed - just click Submit to continue!",
         "data": {}
       }
     },
     "error": {
-      "cannot_connect": "Impossibile connettersi",
-      "unknown": "Errore sconosciuto"
+      "cannot_connect": "Failed to connect",
+      "invalid_auth": "Invalid authentication",
+      "unknown": "Unexpected error"
     },
     "abort": {
-      "already_configured": "Backup Guardian è già configurato",
-      "single_instance_allowed": "È consentita una sola istanza di Backup Guardian"
+      "already_configured": "Backup Guardian is already configured"
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Opzioni Backup Guardian",
-        "description": "Configura le opzioni di Backup Guardian"
+        "title": "Backup Guardian Options",
+        "description": "Configure Backup Guardian settings"
+      },
+      "menu": {
+        "title": "Configuration Menu",
+        "description": "Choose what to configure",
+        "menu_options": {
+          "google_drive": "Google Drive Integration",
+          "advanced": "Advanced Settings"
+        }
+      },
+      "google_drive": {
+        "title": "Google Drive Integration",
+        "description": "Enable or disable Google Drive backup monitoring.\n\nCurrent status: {status}\n\n{setup_guide}",
+        "data": {
+          "enable_google_drive": "Enable Google Drive"
+        }
+      },
+      "google_credentials": {
+        "title": "Google Drive Credentials",
+        "description": "{setup_guide}\n\n{folder_help}",
+        "data": {
+          "google_client_id": "Client ID",
+          "google_client_secret": "Client Secret",
+          "google_folder_id": "Folder ID (or URL)"
+        }
+      },
+      "google_oauth": {
+        "title": "Authorize Google Drive Access",
+        "description": "**Authorization URL:**\n{auth_url}\n\n**Instructions:**\n{instructions}",
+        "data": {
+          "authorization_code": "Authorization Code"
+        }
+      },
+      "advanced": {
+        "title": "Advanced Settings",
+        "description": "{info}",
+        "data": {}
       }
+    },
+    "error": {
+      "invalid_credentials": "Invalid Client ID or Client Secret format",
+      "invalid_folder_id": "Invalid Folder ID or URL",
+      "code_required": "Authorization code is required",
+      "auth_failed": "Authorization failed - check the code and try again"
     }
   }
 }

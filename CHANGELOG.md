@@ -1,182 +1,142 @@
 # Changelog
 
-Tutte le modifiche notevoli a questo progetto saranno documentate in questo file.
+Tutte le modifiche importanti a questo progetto saranno documentate in questo file.
 
-Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/),
+Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it-IT/1.1.0/),
 e questo progetto aderisce al [Semantic Versioning](https://semver.org/lang/it/).
 
-## [1.1.0] - 2026-02-15
+---
 
-### 🎉 Prima Release Completamente Funzionante!
+## [1.2.0] - 2026-02-28
 
-Questa è la **prima versione stabile e completa** di Backup Guardian, pronta per l'uso in produzione!
+### ✨ Novità
 
-### Added
-- ✨ **Campo Destinazione Backup**: Ogni backup ora mostra la sua destinazione (Home Assistant Locale, Google Drive, ecc.)
-- 🎨 **Badge Colorati nella Card**: Interfaccia rinnovata con badge che indicano visivamente la destinazione
-- 🔄 **Copia Automatica File Frontend**: Il file JavaScript della card viene copiato automaticamente in `/www/community/`
-- 📍 **Struttura Multi-Destinazione**: Codice preparato per future integrazioni cloud (Google Drive, Dropbox, OneDrive)
-- 📝 **Attributo `backup_destination`**: Nuovo attributo nei sensori per identificare la destinazione
+#### 🌐 Integrazione Google Drive
+- **Supporto Google Drive completo**: Backup Guardian ora monitora anche i backup su Google Drive!
+- **OAuth2 sicuro**: Usa le tue credenziali Google personali (Client ID e Secret)
+- **Merge automatico**: Visualizza backup locali e Google Drive insieme nella stessa card
+- **Badge colorati per destinazione**:
+  - 🏠 Celeste per Home Assistant Locale
+  - 🟢 Verde per Google Drive
+  - 🔴 Rosso per OneDrive (preparato per future integrazioni)
+  - 🔵 Blu per Dropbox (preparato per future integrazioni)
 
-### Fixed
-- 🕐 **Fix Timezone Critico**: Gli orari ora sono corretti (risolto problema -1 ora)
-- 🐛 **Conversione Data UTC → Locale**: Uso corretto di `dt_util` per fuso orario
-- 🔧 **Import Python 3.13**: Rimosso `zoneinfo`, uso solo moduli HA nativi
-- 📦 **Copia Automatica Card**: Non serve più copiare manualmente il file JavaScript
-- 🏷️ **Versione Dispositivo**: Auto-read da `manifest.json`
+#### ⚙️ Menu Configurazione
+- **Config Flow rinnovato**: Menu opzioni per gestire Google Drive
+- **Setup guidato OAuth2**: Flow passo-passo per autorizzazione Google
+- **Folder ID configurabile**: Scegli quale cartella Drive monitorare
 
-### Changed
-- 🎨 **UI Card Rinnovata**: Design moderno con badge destinazione
-- 📊 **Visualizzazione Migliorata**: Layout più chiaro e intuitivo
-- 🔄 **Gestione Robusta Date**: Parsing date con fallback multipli
-- 📝 **Documentazione Completa**: README e guide aggiornate
+#### 🎨 Lovelace Card Migliorata
+- **Badge colorati**: Ogni destinazione ha il suo colore ufficiale del brand
+- **Bordi colorati**: Box backup con bordo sinistro colorato per destinazione
+- **Scroll fisso**: Lista backup non torna più in alto automaticamente
+- **Performance ottimizzate**: Aggiornamenti solo quando i dati cambiano realmente
+
+### 🔧 Miglioramenti Tecnici
+- Import Google API non bloccanti (uso di executor)
+- Fix blocking call warnings
+- Gestione corretta credenziali OAuth2
+- Supporto pattern multipli backup (.tar, .tar.gz, .tgz)
+- Contatori separati: `local_count` e `drive_count`
+
+### 🐛 Bug Fix
+- Risolto problema scroll automatico card Lovelace
+- Fix error `'Credentials' object has no attribute 'request'`
+- Fix `build() takes at most 2 positional arguments`
+- Gestione corretta cache browser (Edge, iOS)
+
+### 📦 Dipendenze
+- Aggiunte: `google-api-python-client`, `google-auth`, `google-auth-oauthlib`, `google-auth-httplib2`
+
+### 📚 Documentazione
+- Aggiunta guida setup Google Cloud Console
+- Documentazione OAuth2 flow completo
+- Istruzioni configurazione Google Drive
 
 ---
 
-## [1.0.18] - 2026-02-15
+## [1.1.0] - 2026-02-21
 
-### Fixed
-- 🔧 **Auto-copy Frontend Files**: Implementato sistema automatico di copia file JavaScript
-- 📁 **Directory Creation**: Creazione automatica `/www/community/backup_guardian/`
-- 🔄 **File Update Detection**: Aggiornamento automatico file quando cambia versione
+### ✨ Novità
+- **Card Lovelace personalizzata**: Interfaccia grafica per visualizzare i backup
+- **Lista espandibile**: Mostra tutti i backup con dettagli
+- **Statistiche aggregate**: Totale backup e dimensione complessiva
+- **Badge destinazione**: Indica dove è salvato ogni backup
 
----
+### 🎨 Card Features
+- Visualizzazione ultimo backup con tutti i dettagli
+- Box statistiche (totale backup, MB totali)
+- Lista espandibile/comprimibile
+- Design responsive e moderno
+- Icone e colori personalizzati
 
-## [1.0.17] - 2026-02-14
-
-### Fixed
-- 🐛 **Fix Timezone Conversion**: Risolto problema conversione orari UTC → locale
-- 🕐 **Orari Corretti**: Non più differenza di 1 ora tra orario backup e visualizzazione
-
----
-
-## [1.0.13] - 2026-02-14
-
-### Added
-- 📍 **Preparazione Multi-Destinazione**: Aggiunta struttura per supporto future destinazioni
-- 🏷️ **Attributo Destinazione**: Preparazione campo `destination` nei dati backup
+### 🔧 Miglioramenti
+- Sensori più informativi
+- Attributi estesi per ogni backup
+- Hash MD5 per verifica integrità
+- Timestamp precisi (data e ora separati)
 
 ---
 
-## [1.0.12] - 2026-02-01
+## [1.0.0] - 2026-02-15
 
-### Fixed
-- 🎨 **Icone PNG**: Aggiunte icone con trasparenza corretta
-- 🖼️ **Logo Display**: Fix visualizzazione icone nel browser
+### 🎉 Release Iniziale
 
----
+#### Funzionalità Base
+- **Monitoraggio backup locale**: Legge i backup da Supervisor API
+- **4 Sensori HA**:
+  - `sensor.backup_guardian_totale_backup` - Contatore totale
+  - `sensor.backup_guardian_dimensione_totale` - MB totali
+  - `sensor.backup_guardian_ultimo_backup` - Nome ultimo backup
+  - `sensor.backup_guardian_info_backup` - Dettagli ultimo backup
 
-## [1.0.11] - 2026-02-01
+#### Attributi Backup
+- Nome file
+- Data e ora creazione
+- Dimensione in MB
+- Hash MD5
+- Tipo (full/partial)
+- Protezione password
+- Slug identificativo
 
-### Added
-- 📚 **Documentazione Estesa**: README completo con troubleshooting
-- 🔧 **Sezione Debug**: Istruzioni per abilitare log dettagliati
-- 📝 **Esempi Automazioni**: Notifiche backup mancante e nuovo backup
+#### Automazioni
+- Notifiche su nuovo backup
+- Alert su spazio insufficiente
+- Monitoraggio backup vecchi
 
-### Changed
-- 📖 **README Riscritto**: Struttura migliorata e più chiara
-- 🔄 **Istruzioni Cache**: Focus su problemi cache browser
+### 🔒 Sicurezza
+- Nessuna credential esterna richiesta
+- Usa API Supervisor locale
+- Permessi minimi necessari
 
----
-
-## [1.0.9] - 2026-01-31
-
-### Fixed
-- 🔧 **Supervisor API Access**: Uso corretto `hassio_component.send_command()`
-- 📏 **Dimensioni Backup Corrette**: Risolto problema 0 MB
-- 🏷️ **Versione Dispositivo**: Auto-read da manifest.json
-- 🎨 **Lovelace Card Fix**: Rimosso dipendenze `ha-icon`
-
-### Changed
-- 🔄 **Coordinator Aggiornato**: Migliore gestione API Supervisor
-- 📦 **Sensor.py Ottimizzato**: Lettura versione automatica
-- 🎨 **Card UI**: Uso emoji invece di componenti HA
-
----
-
-## [1.0.7] - 2026-01-31
-
-### Added
-- ✨ **Prima Versione Funzionante**: Integrazione operativa
-- 📊 **Supervisor API Integration**: Connessione stabile
-- 🎨 **Lovelace Card**: Card personalizzata
-- 📈 **3 Sensori Attivi**: Dati corretti e aggiornati
-
-### Fixed
-- 🔧 **API Access**: Fix accesso Supervisor per HA OS
-- 📏 **Calcolo Dimensioni**: Fix conversione bytes → MB
-
----
-
-## [1.0.0] - 2026-01-31
-
-### Added - Prima Release Pubblica
-- ✨ **Lancio Iniziale** di Backup Guardian
-- 📊 **Monitoraggio Backup**: Backup locali Home Assistant
-- 🔍 **Hash SHA256**: Verifica integrità per ogni backup
-- 📈 **3 Sensori Principali**:
-  - `sensor.ultimo_backup` - Informazioni ultimo backup
-  - `sensor.totale_backup` - Numero totale backup
-  - `sensor.dimensione_totale_backup` - Spazio occupato
-- 🎨 **Lovelace Card Personalizzata**: Interfaccia intuitiva
-- 🔄 **Aggiornamento Automatico**: Ogni 5 minuti
-- 📝 **Documentazione Italiana**: Completa
-- 🌐 **Supporto HACS**: Installazione facilitata
-- 🎯 **Config Flow UI**: Configurazione tramite interfaccia
-- 🌍 **Traduzioni**: Interfaccia in italiano
-
-### Caratteristiche Card
-- Visualizzazione ultimo backup dettagliata
-- Bottone espandibile per lista completa
-- Design responsive integrato con tema HA
-- Informazioni hash SHA256 per ogni backup
-
----
-
-## [Unreleased]
-
-### Pianificato per Versioni Future
-- 🌐 **Google Drive Integration**: Backup automatici su Google Drive
-- 📦 **Dropbox Support**: Sincronizzazione con Dropbox
-- ☁️ **OneDrive Support**: Backup su Microsoft OneDrive
-- 🔔 **Notifiche Push Avanzate**: Sistema notifiche personalizzato
-- 🤖 **Automazioni Intelligenti**: Pulizia automatica backup vecchi
-- 📊 **Grafici Storici**: Visualizzazione trend backup
-- 🔐 **Backup Differenziali**: Ottimizzazione spazio
-- ⚙️ **Configurazione Avanzata**: Opzioni personalizzazione
-- 🌍 **Multi-lingua**: Traduzioni in altre lingue
-- 📱 **App Mobile Nativa**: Gestione da smartphone
-- ✅ **Verifica Integrità Automatica**: Test backup programmati
-- 📄 **Export CSV**: Esportazione lista backup
-- 🔄 **Restore Automatico**: Ripristino facilitato
-- 📈 **Analytics**: Statistiche utilizzo storage
+### 📦 Installazione
+- Supporto HACS
+- Installazione manuale
+- Configurazione via UI
 
 ---
 
 ## Legenda Emoji
 
-- ✨ `Added` - Nuove funzionalità
-- 🔧 `Changed` - Modifiche a funzionalità esistenti
-- 🗑️ `Deprecated` - Funzionalità che verranno rimosse
-- ❌ `Removed` - Funzionalità rimosse
-- 🐛 `Fixed` - Bug fix
-- 🔒 `Security` - Vulnerabilità corrette
-- 📝 `Documentation` - Aggiornamenti documentazione
-- 🎨 `UI/UX` - Miglioramenti interfaccia
-- 📊 `Data` - Modifiche gestione dati
-- 🔄 `Refactoring` - Ristrutturazione codice
+- ✨ Novità
+- 🔧 Miglioramenti
+- 🐛 Bug Fix
+- 🔒 Sicurezza
+- 📚 Documentazione
+- 🎨 UI/UX
+- ⚙️ Configurazione
+- 📦 Dipendenze
+- 🌐 Integrazioni
 
 ---
 
-**Note sulla Versione 1.1.0:**
+## Link Utili
 
-Questa è la prima versione **completamente stabile e testata** di Backup Guardian. Tutte le funzionalità core sono operative e testate:
+- [Repository GitHub](https://github.com/leonardus1973/backup-guardian)
+- [Issues](https://github.com/leonardus1973/backup-guardian/issues)
+- [Discussioni](https://github.com/leonardus1973/backup-guardian/discussions)
+- [Donazioni PayPal](https://paypal.me/leonardopistoni)
 
-- ✅ Monitoraggio backup locale funzionante
-- ✅ Dimensioni e orari corretti
-- ✅ Card Lovelace con auto-installazione
-- ✅ Badge destinazione visualizzati
-- ✅ Compatibilità Python 3.13
-- ✅ Zero configurazione manuale richiesta
+---
 
-**Consigliato per uso in produzione!** 🎉
+**Grazie per usare Backup Guardian!** 🛡️
