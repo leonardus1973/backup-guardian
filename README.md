@@ -1,9 +1,9 @@
 # 🛡️ Backup Guardian
 
-[![GitHub Release](https://img.shields.io/github/release/leonardus1973/backup-guardian.svg?style=flat-square)](https://github.com/leonardus1973/backup-guardian/releases)
-[![GitHub Activity](https://img.shields.io/github/commit-activity/y/leonardus1973/backup-guardian.svg?style=flat-square)](https://github.com/leonardus1973/backup-guardian/commits/main)
-[![License](https://img.shields.io/github/license/leonardus1973/backup-guardian.svg?style=flat-square)](LICENSE)
-[![hacs](https://img.shields.io/badge/HACS-Default-orange.svg?style=flat-square)](https://github.com/hacs/integration)
+[![Version](https://img.shields.io/github/v/release/leonardus1973/backup-guardian)](https://github.com/leonardus1973/backup-guardian/releases)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2023.1+-blue)](https://www.home-assistant.io)
+[![License](https://img.shields.io/github/license/leonardus1973/backup-guardian)](LICENSE)
+[![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 
 **Monitora i tuoi backup di Home Assistant con stile!** 🚀
 
