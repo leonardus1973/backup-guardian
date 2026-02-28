@@ -13,13 +13,68 @@ class BackupGuardianCard extends HTMLElement {
   }
 
   set hass(hass) {
+    const oldHass = this._hass;
     this._hass = hass;
     
     if (!this.content) {
       this._createCard();
+      this._updateCard();
+      return;
     }
     
-    this._updateCard();
+    // Se la lista è espansa, NON aggiornare (per evitare scroll reset)
+    if (this._expanded) {
+      return;
+    }
+    
+    // Aggiorna SOLO se i dati sono cambiati
+    const entityId = this.config.entity;
+    const oldEntity = oldHass?.states[entityId];
+    const newEntity = hass.states[entityId];
+    
+    if (!oldEntity || 
+        oldEntity.state !== newEntity.state ||
+        JSON.stringify(oldEntity.attributes.backup_list) !== JSON.stringify(newEntity.attributes.backup_list)) {
+      this._updateCard();
+    }
+  }
+
+  _getDestinationColor(destination) {
+    // Mappa colori UFFICIALI dei brand
+    // Supporta sia codici (local, google_drive) che nomi friendly
+    const colors = {
+      // Codici
+      'local': '#03A9F4',
+      'google_drive': '#4CAF50',
+      'dropbox': '#0061FF',
+      'onedrive': '#E74C3C',
+      'nas': '#FF9800',
+      'ftp': '#9C27B0',
+      // Nomi friendly (case-insensitive)
+      'home assistant locale': '#03A9F4',
+      'google drive': '#4CAF50',
+      'dropbox': '#0061FF',
+      'onedrive': '#E74C3C',
+      'nas': '#FF9800',
+      'ftp': '#9C27B0',
+    };
+    
+    // Cerca sia minuscolo che esatto
+    const key = destination.toLowerCase();
+    return colors[key] || colors[destination] || '#03A9F4';
+  }
+
+  _getDestinationName(destination) {
+    // Nomi friendly per destinazioni
+    const names = {
+      'local': 'HOME ASSISTANT LOCALE',
+      'google_drive': 'GOOGLE DRIVE',
+      'dropbox': 'DROPBOX',
+      'onedrive': 'ONEDRIVE',
+      'nas': 'NAS',
+      'ftp': 'FTP',
+    };
+    return names[destination] || destination.toUpperCase();
   }
 
   _createCard() {
@@ -72,7 +127,6 @@ class BackupGuardianCard extends HTMLElement {
       .destination-badge {
         display: inline-block;
         padding: 2px 8px;
-        background: var(--primary-color);
         color: white;
         border-radius: 12px;
         font-size: 11px;
@@ -137,7 +191,7 @@ class BackupGuardianCard extends HTMLElement {
         padding: 12px;
         border-radius: 8px;
         margin-bottom: 8px;
-        border-left: 3px solid var(--primary-color);
+        border-left: 3px solid;
       }
 
       .backup-item-header {
@@ -215,7 +269,8 @@ class BackupGuardianCard extends HTMLElement {
     let lastBackupHtml = '';
     if (lastEntity && lastEntity.state !== 'Nessun backup') {
       const attrs = lastEntity.attributes;
-      const destination = attrs.backup_destination || 'Locale';
+      const destination = attrs.backup_destination || 'Home Assistant Locale';
+      const destinationColor = this._getDestinationColor(destination);
       
       lastBackupHtml = `
         <div class="section-title">📦 Ultimo Backup</div>
@@ -225,7 +280,11 @@ class BackupGuardianCard extends HTMLElement {
             <span class="value">${attrs.backup_name || 'N/A'}</span>
             
             <span class="label">Destinazione:</span>
-            <span class="value"><span class="destination-badge">${destination}</span></span>
+            <span class="value">
+              <span class="destination-badge" style="background: ${destinationColor};">
+                ${destination}
+              </span>
+            </span>
             
             <span class="label">Data:</span>
             <span class="value">${attrs.backup_date || 'N/A'}</span>
@@ -270,11 +329,18 @@ class BackupGuardianCard extends HTMLElement {
       </button>
       
       <div class="backup-list ${this._expanded ? 'expanded' : ''}" id="backupList">
-        ${backupList.length > 0 ? backupList.map((backup, index) => `
-          <div class="backup-item">
+        ${backupList.length > 0 ? backupList.map((backup, index) => {
+          // Destination è già il nome friendly
+          const destination = backup.destination || 'Home Assistant Locale';
+          const destinationColor = this._getDestinationColor(destination);
+          
+          return `
+          <div class="backup-item" style="border-left-color: ${destinationColor};">
             <div class="backup-item-header">
               <strong>${backup.name}</strong>
-              <span class="destination-badge">${backup.destination || 'Locale'}</span>
+              <span class="destination-badge" style="background: ${destinationColor};">
+                ${destination}
+              </span>
             </div>
             <div class="backup-info">
               <span class="label">Data/Ora:</span>
@@ -289,10 +355,12 @@ class BackupGuardianCard extends HTMLElement {
               </span>
             </div>
           </div>
-        `).join('') : '<div class="no-backups">Nessun backup trovato</div>'}
+        `;
+        }).join('') : '<div class="no-backups">Nessun backup trovato</div>'}
       </div>
     `;
     
+    // Aggiungi event listener al bottone toggle
     const toggleBtn = this.shadowRoot.getElementById('toggleBtn');
     if (toggleBtn) {
       toggleBtn.addEventListener('click', () => {
@@ -320,4 +388,3 @@ window.customCards.push({
 });
 
 console.log('✅ Backup Guardian Card loaded successfully!');
-
