@@ -96,4 +96,5 @@ def _files_are_different(file1: Path, file2: Path) -> bool:
     except Exception:
         # In caso di errore, assumiamo che siano diversi per forzare la copia
         return True
-        
+
+
