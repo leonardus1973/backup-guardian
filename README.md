@@ -7,7 +7,6 @@
 [![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 [![Integration](https://img.shields.io/badge/Integration-Custom%20Component-blue)](https://www.home-assistant.io)
 
-[![CI](https://img.shields.io/github/actions/workflow/status/leonardus1973/backup-guardian/ci.yml?branch=main)](https://github.com/leonardus1973/backup-guardian/actions)
 [![Last Commit](https://img.shields.io/github/last-commit/leonardus1973/backup-guardian)](https://github.com/leonardus1973/backup-guardian/commits)
 [![Issues](https://img.shields.io/github/issues/leonardus1973/backup-guardian)](https://github.com/leonardus1973/backup-guardian/issues)
 [![PRs](https://img.shields.io/github/issues-pr/leonardus1973/backup-guardian)](https://github.com/leonardus1973/backup-guardian/pulls)
