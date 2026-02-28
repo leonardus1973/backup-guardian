@@ -331,7 +331,6 @@ Per maggiori dettagli: https://creativecommons.org/licenses/by-nc/4.0/
 
 - **Issues**: [GitHub Issues](https://github.com/leonardus1973/backup-guardian/issues)
 - **Discussioni**: [GitHub Discussions](https://github.com/leonardus1973/backup-guardian/discussions)
-- **Email**: leonardus1973@gmail.com
 
 ---
 
