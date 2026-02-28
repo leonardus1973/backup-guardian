@@ -5,6 +5,7 @@
 [![License](https://img.shields.io/github/license/leonardus1973/backup-guardian)](LICENSE)
 [![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC_BY--NC_4.0-blue.svg)](https://creativecommons.org/licenses/by-nc/4.0/)
 [![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
+[![Integration](https://img.shields.io/badge/Integration-Custom%20Component-blue)](https://www.home-assistant.io)
 
 [![CI](https://img.shields.io/github/actions/workflow/status/leonardus1973/backup-guardian/ci.yml?branch=main)](https://github.com/leonardus1973/backup-guardian/actions)
 [![Last Commit](https://img.shields.io/github/last-commit/leonardus1973/backup-guardian)](https://github.com/leonardus1973/backup-guardian/commits)
@@ -12,7 +13,7 @@
 [![PRs](https://img.shields.io/github/issues-pr/leonardus1973/backup-guardian)](https://github.com/leonardus1973/backup-guardian/pulls)
 [![Stars](https://img.shields.io/github/stars/leonardus1973/backup-guardian?style=social)](https://github.com/leonardus1973/backup-guardian/stargazers)
 [![Downloads](https://img.shields.io/github/downloads/leonardus1973/backup-guardian/total)](https://github.com/leonardus1973/backup-guardian/releases)
-[![Integration](https://img.shields.io/badge/Integration-Custom%20Component-blue)](https://www.home-assistant.io)
+
 [![HACS Default](https://img.shields.io/badge/HACS-Default-green.svg)](https://github.com/hacs/integration)
 
 [![codecov](https://img.shields.io/codecov/c/github/leonardus1973/backup-guardian)](https://codecov.io/gh/leonardus1973/backup-guardian)
