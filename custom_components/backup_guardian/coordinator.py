@@ -315,4 +315,5 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
                 "local_count": 0,
                 "drive_count": 0,
             }
-            
+
+
