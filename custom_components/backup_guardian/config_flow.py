@@ -276,4 +276,5 @@ class BackupGuardianOptionsFlow(config_entries.OptionsFlow):
                 "info": "Impostazioni avanzate disponibili nelle prossime versioni"
             },
         )
-        
+
+
