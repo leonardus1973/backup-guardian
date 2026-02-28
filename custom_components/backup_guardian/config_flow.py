@@ -72,7 +72,7 @@ class BackupGuardianOptionsFlow(config_entries.OptionsFlow):
 
     def __init__(self, config_entry: config_entries.ConfigEntry):
         """Initialize options flow."""
-        self.config_entry = config_entry
+        # NON impostare self.config_entry - è già una proprietà dalla classe base!
         self._google_drive_data = {}
         self._oauth_handler = None
 
@@ -276,5 +276,4 @@ class BackupGuardianOptionsFlow(config_entries.OptionsFlow):
                 "info": "Impostazioni avanzate disponibili nelle prossime versioni"
             },
         )
-
-
+        

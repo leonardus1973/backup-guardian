@@ -225,7 +225,8 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
                 "type": backup_data.get("type", "full"),
                 "protected": backup_data.get("protected", False),
                 "compressed": True,
-                "destination": destination_friendly,  # Nome user-friendly per la card
+                "destination": source,  # Codice destinazione (local, google_drive, ecc.)
+                "destination_name": destination_friendly,  # Nome user-friendly
             }
             
             _LOGGER.debug(f"Processed backup: {name}, size: {size_mb} MB, time: {date_obj_local.strftime('%H:%M:%S')}, destination: {destination_friendly}")
@@ -315,5 +316,3 @@ class BackupGuardianCoordinator(DataUpdateCoordinator):
                 "local_count": 0,
                 "drive_count": 0,
             }
-
-

@@ -19,6 +19,15 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
+# Import Google libraries at module level to avoid blocking calls in event loop
+try:
+    from googleapiclient.discovery import build
+    from google.oauth2.credentials import Credentials
+    GOOGLE_AVAILABLE = True
+except ImportError:
+    _LOGGER.error("Google API client not installed")
+    GOOGLE_AVAILABLE = False
+
 
 class GoogleDriveClient:
     """Google Drive API client for backup scanning."""
@@ -41,11 +50,17 @@ class GoogleDriveClient:
             True if setup successful, False otherwise
         """
         try:
-            # Import Google API client (will be installed via requirements)
-            from googleapiclient.discovery import build
-            from google.oauth2.credentials import Credentials
+            if not GOOGLE_AVAILABLE:
+                _LOGGER.error(
+                    "Google API client not installed. "
+                    "Add 'google-api-python-client>=2.0.0' to requirements"
+                )
+                return False
 
             # Create credentials object from token
+            from google.auth.transport.requests import Request
+            from google.oauth2.credentials import Credentials
+            
             creds = Credentials(
                 token=self._credentials.get("token"),
                 refresh_token=self._credentials.get("refresh_token"),
@@ -55,18 +70,15 @@ class GoogleDriveClient:
                 scopes=GOOGLE_DRIVE_API_SCOPES,
             )
 
-            # Build service
-            self._service = build("drive", GOOGLE_DRIVE_API_VERSION, credentials=creds)
+            # Build service in executor to avoid blocking
+            # IMPORTANTE: usa credentials= come parametro nominale
+            self._service = await self.hass.async_add_executor_job(
+                lambda: build("drive", GOOGLE_DRIVE_API_VERSION, credentials=creds)
+            )
             
             _LOGGER.info("Google Drive API service initialized successfully")
             return True
 
-        except ImportError:
-            _LOGGER.error(
-                "Google API client not installed. "
-                "Add 'google-api-python-client>=2.0.0' to requirements"
-            )
-            return False
         except Exception as err:
             _LOGGER.error(f"Failed to setup Google Drive service: {err}", exc_info=True)
             return False
@@ -281,5 +293,3 @@ class GoogleDriveClient:
             _LOGGER.error(f"Failed to refresh token: {err}", exc_info=True)
         
         return None
-
-
