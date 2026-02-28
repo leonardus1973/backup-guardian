@@ -2,7 +2,6 @@
 
 [![Version](https://img.shields.io/github/v/release/leonardus1973/backup-guardian)](https://github.com/leonardus1973/backup-guardian/releases)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2023.1+-blue)](https://www.home-assistant.io)
-[![License](https://img.shields.io/github/license/leonardus1973/backup-guardian)](LICENSE)
 [![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC_BY--NC_4.0-blue.svg)](https://creativecommons.org/licenses/by-nc/4.0/)
 [![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 [![Integration](https://img.shields.io/badge/Integration-Custom%20Component-blue)](https://www.home-assistant.io)
