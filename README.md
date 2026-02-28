@@ -10,12 +10,9 @@
 [![Last Commit](https://img.shields.io/github/last-commit/leonardus1973/backup-guardian)](https://github.com/leonardus1973/backup-guardian/commits)
 [![Issues](https://img.shields.io/github/issues/leonardus1973/backup-guardian)](https://github.com/leonardus1973/backup-guardian/issues)
 [![PRs](https://img.shields.io/github/issues-pr/leonardus1973/backup-guardian)](https://github.com/leonardus1973/backup-guardian/pulls)
-[![Stars](https://img.shields.io/github/stars/leonardus1973/backup-guardian?style=social)](https://github.com/leonardus1973/backup-guardian/stargazers)
 [![Downloads](https://img.shields.io/github/downloads/leonardus1973/backup-guardian/total)](https://github.com/leonardus1973/backup-guardian/releases)
+[![Stars](https://img.shields.io/github/stars/leonardus1973/backup-guardian?style=social)](https://github.com/leonardus1973/backup-guardian/stargazers)
 
-[![HACS Default](https://img.shields.io/badge/HACS-Default-green.svg)](https://github.com/hacs/integration)
-
-[![codecov](https://img.shields.io/codecov/c/github/leonardus1973/backup-guardian)](https://codecov.io/gh/leonardus1973/backup-guardian)
 [![Tested on HA](https://img.shields.io/badge/Tested%20on-Home%20Assistant%202025.x-blue)](https://www.home-assistant.io)
 
 
