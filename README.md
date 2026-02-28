@@ -7,7 +7,7 @@
 
 **Monitora i tuoi backup di Home Assistant con stile!** 🚀
 
-Integrazione personalizzata per Home Assistant che tiene traccia di tutti i tuoi backup, sia locali che su cloud (Google Drive, Dropbox, OneDrive - in arrivo).
+Integrazione personalizzata per Home Assistant che tiene traccia di tutti i tuoi backup, sia locali che su cloud: Google Drive (Dropbox, OneDrive, NAS - in arrivo).
 
 ---
 
